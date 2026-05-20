@@ -1,39 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 body {
-  @apply bg-fjord-50 text-fjord-950 antialiased;
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  @apply bg-white text-ink-950 antialiased;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
+}
+
+@layer base {
+  h1, h2, h3 {
+    @apply font-display tracking-tightest;
+  }
 }
 
 @layer components {
   .card {
-    @apply rounded-2xl bg-white shadow-sm ring-1 ring-fjord-100 p-5;
+    @apply rounded-3xl bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.08)] ring-1 ring-ink-100 p-6;
+  }
+  .card-dark {
+    @apply rounded-3xl bg-ink-950 text-white ring-1 ring-ink-800 p-6;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-medium transition;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-medium transition;
   }
   .btn-primary {
-    @apply btn bg-fjord-600 text-white hover:bg-fjord-700 disabled:opacity-50;
+    @apply btn bg-ink-950 text-white hover:bg-ink-800 disabled:opacity-50;
   }
   .btn-secondary {
-    @apply btn bg-fjord-100 text-fjord-800 hover:bg-fjord-200;
+    @apply btn bg-ink-100 text-ink-900 hover:bg-ink-200;
   }
   .btn-ghost {
-    @apply btn bg-transparent hover:bg-fjord-100;
+    @apply btn bg-transparent text-ink-800 hover:bg-ink-100;
+  }
+  .btn-accent {
+    @apply btn bg-aurora-500 text-ink-950 hover:bg-aurora-400 font-semibold;
   }
   .input {
-    @apply w-full rounded-xl border border-fjord-200 bg-white px-3 py-2.5 text-fjord-950 focus:border-fjord-500 focus:outline-none focus:ring-2 focus:ring-fjord-200;
+    @apply w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-ink-950 focus:border-ink-500 focus:outline-none focus:ring-2 focus:ring-ink-100;
   }
   .label {
-    @apply block text-sm font-medium text-fjord-800 mb-1.5;
+    @apply block text-sm font-medium text-ink-800 mb-1.5;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full bg-fjord-100 px-2.5 py-1 text-xs font-medium text-fjord-800;
+    @apply inline-flex items-center gap-1 rounded-full bg-ink-100 px-2.5 py-1 text-xs font-medium text-ink-800;
+  }
+  .chip-accent {
+    @apply inline-flex items-center gap-1 rounded-full bg-aurora-100 px-2.5 py-1 text-xs font-semibold text-aurora-800;
+  }
+  .display {
+    @apply font-display tracking-tightest leading-[0.95];
+  }
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.18em] text-aurora-700;
   }
 }
