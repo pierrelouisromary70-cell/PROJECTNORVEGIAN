@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { computeVdot, RACE_PRESETS } from '@/lib/vdot/calculator';
+import { predictRaceTimes, formatRaceTime } from '@/lib/vdot/predictor';
 import { createClient } from '@/lib/supabase/client';
 import { inferExperience } from '@/lib/training/norwegian';
 
@@ -148,6 +149,19 @@ export default function OnboardingPage({ params: { locale } }: { params: { local
               <div className="text-xs uppercase text-fjord-600">{t('computedVdot')}</div>
               <div className="text-3xl font-bold text-fjord-900">{vdot || '—'}</div>
             </div>
+            {vdot > 0 && (
+              <div>
+                <p className="text-sm font-medium text-fjord-800 mb-2">Vos temps prédits sur les autres distances :</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {predictRaceTimes(vdot).map((p) => (
+                    <div key={p.distanceLabel} className="rounded-lg bg-white border border-fjord-100 p-2">
+                      <div className="text-xs text-fjord-600">{p.distanceLabel}</div>
+                      <div className="font-bold text-fjord-900">{formatRaceTime(p.timeSeconds)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
 
@@ -183,7 +197,7 @@ export default function OnboardingPage({ params: { locale } }: { params: { local
         )}
 
         <div className="flex justify-between mt-8">
-          <button type="button" className="btn-ghost" onClick={() => setStep((s) => Math.max(1, (s - 1) as Step))} disabled={step === 1}>{c('back')}</button>
+          <button type="button" className="btn-ghost" onClick={() => setStep((s) => (Math.max(1, s - 1) as Step))} disabled={step === 1}>{c('back')}</button>
           {step < 6 ? (
             <button type="button" className="btn-primary" onClick={() => setStep((s) => (s + 1) as Step)}>{c('continue')}</button>
           ) : (
