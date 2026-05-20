@@ -1,0 +1,35 @@
+Nordic Run — Proprietary License
+
+Copyright (c) 2026 Nordic Run. All rights reserved.
+
+This source code and all associated assets (collectively, the "Software") are
+the proprietary and confidential property of Nordic Run.
+
+The Software is licensed, not sold. No license, right or interest, express
+or implied, is granted to any party by way of disclosure, estoppel or
+otherwise, except as expressly set forth in a separate written agreement
+signed by Nordic Run.
+
+You may NOT, without prior written permission from Nordic Run:
+  1. Copy, reproduce, distribute, publish, transmit, broadcast, transfer,
+     sell, lease, rent, sublicense or commercially exploit the Software.
+  2. Decompile, disassemble, reverse engineer, modify, adapt, translate,
+     or create derivative works of the Software.
+  3. Remove or alter any copyright, trademark, or other proprietary notices.
+  4. Use the Software's algorithms, data structures, training methodology,
+     or business logic in any competing product or service.
+
+Trade-secret notice: the training plan generation logic, the VDOT-derived
+pace zoning, the fatigue/cycle adaptation rules, and the parameters used
+to translate the Norwegian training method into individualised plans are
+trade secrets of Nordic Run. They are made available for internal use and
+deployment to authorised infrastructure only.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
+NORDIC RUN BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+For licensing or commercial enquiries: contact@nordicrun.app
