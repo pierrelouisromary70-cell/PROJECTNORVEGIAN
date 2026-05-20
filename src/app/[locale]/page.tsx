@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { setRequestLocale } from 'next-intl/server';
 import { Activity, Compass, HeartPulse } from 'lucide-react';
 
 export default function LandingPage({ params: { locale } }: { params: { locale: string } }) {
+  setRequestLocale(locale);
   const t = useTranslations('landing');
   const c = useTranslations('common');
   return (

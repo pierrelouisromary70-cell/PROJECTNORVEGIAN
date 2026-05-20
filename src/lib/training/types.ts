@@ -1,4 +1,4 @@
-import type { PaceKey } from '@/lib/vdot/paces';
+export type PaceZoneKey = 'easy' | 'long' | 'marathon' | 'lt1' | 'lt2' | 'interval' | 'repetition';
 
 export type WorkoutType =
   | 'easy'
@@ -18,29 +18,29 @@ export interface WorkoutStep {
   reps?: number;
   distanceMeters?: number;
   durationSeconds?: number;
-  pace?: PaceKey | 'long';
+  pace?: PaceZoneKey;
   recoverySeconds?: number;
   note?: string;
 }
 
 export interface Workout {
   id: string;
-  date: string; // ISO yyyy-mm-dd
+  date: string;
   type: WorkoutType;
   title: string;
   totalDistanceMeters: number;
   totalDurationSeconds: number;
   steps: WorkoutStep[];
-  purpose: string; // why this workout exists
-  feel: string; // how it should feel
-  rpe: number; // 1-10
-  guidance: string[]; // bullet coaching cues
-  isDouble?: boolean; // double-threshold day (AM + PM)
+  purpose: string;
+  feel: string;
+  rpe: number;
+  guidance: string[];
+  isDouble?: boolean;
   amPm?: 'AM' | 'PM';
 }
 
 export interface TrainingWeek {
-  weekNumber: number; // 1-based within block
+  weekNumber: number;
   startDate: string;
   totalKm: number;
   phase: TrainingPhase;
@@ -72,5 +72,5 @@ export interface RunnerProfile {
   vdot: number;
   sex: 'male' | 'female' | 'other';
   trackCycle: boolean;
-  timeConstraintsMinPerSession?: number; // max minutes available per session
+  timeConstraintsMinPerSession?: number;
 }

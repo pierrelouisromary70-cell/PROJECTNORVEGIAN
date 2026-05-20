@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { generatePlan } from '@/lib/training/plan-generator';
 import type { RunnerProfile, TrainingBlock, Workout } from '@/lib/training/types';
 import { WorkoutCard } from '@/components/WorkoutCard';
+import { RacePredictor } from '@/components/RacePredictor';
 import { TodayFeedback } from './TodayFeedback';
 import { TrialBanner } from './TrialBanner';
 
@@ -24,7 +25,6 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
 
   if (!profile || !profile.vdot) redirect(`/${locale}/onboarding`);
 
-  // Build or load the current block.
   let block: TrainingBlock;
   if (blockRow && new Date(blockRow.end_date) >= new Date()) {
     block = blockRow.payload as TrainingBlock;
@@ -65,6 +65,8 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
       </header>
 
       <TodayFeedback locale={locale} userId={user.id} todayDate={today} trackCycle={profile.track_cycle} />
+
+      <RacePredictor vdot={Number(profile.vdot)} />
 
       {todayWorkouts.length === 0 ? (
         <div className="card">
