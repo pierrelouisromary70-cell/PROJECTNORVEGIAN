@@ -122,7 +122,7 @@ returns trigger as $$
 begin
   insert into public.profiles (id) values (new.id);
   insert into public.subscriptions (user_id, status, trial_end)
-  values (new.id, 'trialing', now() + interval '30 days');
+  values (new.id, 'trialing', now() + interval '14 days');
   return new;
 end;
 $$ language plpgsql security definer;

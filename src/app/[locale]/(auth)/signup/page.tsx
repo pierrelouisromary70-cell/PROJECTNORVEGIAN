@@ -31,8 +31,8 @@ export default function SignupPage({ params: { locale } }: { params: { locale: s
   return (
     <main className="min-h-screen grid place-items-center px-6">
       <form onSubmit={submit} className="card w-full max-w-sm space-y-4">
-        <h1 className="text-2xl font-bold text-fjord-950">{c('signUp')}</h1>
-        <p className="text-sm text-fjord-700">30 jours gratuits, sans carte requise.</p>
+        <h1 className="text-2xl font-bold text-ink-950">{c('signUp')}</h1>
+        <p className="text-sm text-ink-700">14 jours gratuits, sans carte requise.</p>
         <div>
           <label className="label" htmlFor="email">Email</label>
           <input id="email" className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -43,7 +43,7 @@ export default function SignupPage({ params: { locale } }: { params: { locale: s
         </div>
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <button className="btn-primary w-full" disabled={loading}>{loading ? c('loading') : c('signUp')}</button>
-        <p className="text-sm text-fjord-700 text-center">
+        <p className="text-sm text-ink-700 text-center">
           <Link href={`/${locale}/login`} className="underline">{c('signIn')}</Link>
         </p>
       </form>

@@ -60,8 +60,8 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
       {sub?.status === 'trialing' && <TrialBanner days={trialDaysLeft} locale={locale} />}
 
       <header>
-        <p className="text-sm text-fjord-600">{format(new Date(), 'EEEE dd MMMM')}</p>
-        <h1 className="text-3xl font-bold text-fjord-950">{t('today')}</h1>
+        <p className="text-sm text-ink-600">{format(new Date(), 'EEEE dd MMMM')}</p>
+        <h1 className="display text-4xl md:text-5xl text-ink-950">{t('today')}</h1>
       </header>
 
       <TodayFeedback locale={locale} userId={user.id} todayDate={today} trackCycle={profile.track_cycle} />
@@ -70,7 +70,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
 
       {todayWorkouts.length === 0 ? (
         <div className="card">
-          <p className="text-fjord-700">Pas de séance prévue aujourd'hui.</p>
+          <p className="text-ink-700">Pas de séance prévue aujourd'hui.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -79,7 +79,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
       )}
 
       <section>
-        <h2 className="text-lg font-semibold text-fjord-900 mb-3">À venir</h2>
+        <h2 className="text-lg font-semibold text-ink-900 mb-3">À venir</h2>
         <div className="grid sm:grid-cols-2 gap-3">
           {upcoming.map((w) => <WorkoutCard key={w.id} workout={w} vdot={Number(profile.vdot)} compact />)}
         </div>
