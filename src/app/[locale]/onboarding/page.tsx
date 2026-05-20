@@ -10,6 +10,7 @@ type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
 export default function OnboardingPage({ params: { locale } }: { params: { locale: string } }) {
   const t = useTranslations('onboarding');
+  const tCycle = useTranslations('cycle');
   const c = useTranslations('common');
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
@@ -166,7 +167,7 @@ export default function OnboardingPage({ params: { locale } }: { params: { local
             <h2 className="font-semibold">Suivi du cycle</h2>
             {sex === 'female' ? (
               <div>
-                <p className="text-sm text-fjord-700 mb-3">{useTranslations('cycle')('intro')}</p>
+                <p className="text-sm text-fjord-700 mb-3">{tCycle('intro')}</p>
                 <div>
                   <label className="label">{t('trackCycle')}</label>
                   <div className="flex gap-2">

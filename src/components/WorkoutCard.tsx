@@ -1,6 +1,6 @@
 'use client';
 import { useTranslations } from 'next-intl';
-import type { Workout } from '@/lib/training/types';
+import type { Workout, WorkoutStep } from '@/lib/training/types';
 import { buildPaceZones, formatRange, type PaceZones } from '@/lib/vdot/paces';
 import { formatDistance, formatDuration } from '@/lib/utils';
 import { Flame, Gauge, MapPin } from 'lucide-react';
@@ -50,7 +50,7 @@ export function WorkoutCard({ workout, vdot, compact = false }: { workout: Worko
             <li key={i} className="flex items-start gap-3">
               <span className="mt-1 h-6 w-6 shrink-0 rounded-full bg-fjord-100 text-fjord-700 text-xs grid place-items-center font-semibold">{i + 1}</span>
               <div>
-                <div className="font-medium text-fjord-900">{renderStep(s, zones, t)}</div>
+                <div className="font-medium text-fjord-900">{renderStep(s, zones, t('recovery'))}</div>
                 {s.note && <div className="text-sm text-fjord-600">{s.note}</div>}
               </div>
             </li>
@@ -78,13 +78,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function renderStep(s: { reps?: number; distanceMeters?: number; durationSeconds?: number; pace?: string; recoverySeconds?: number }, zones: PaceZones, t: ReturnType<typeof useTranslations<'workout'>>) {
+function renderStep(s: WorkoutStep, zones: PaceZones, recoveryLabel: string) {
   const paceLabel = s.pace && (zones as any)[s.pace] ? formatRange((zones as any)[s.pace]) : '';
   const dist = s.distanceMeters ? formatDistance(s.distanceMeters) : '';
   const dur = s.durationSeconds ? `${s.durationSeconds}s` : '';
   const body = `${dist}${dur ? ` ${dur}` : ''}${paceLabel ? ` @ ${paceLabel}` : ''}`;
   if (s.reps) {
-    return `${s.reps} × ${body}${s.recoverySeconds ? ` — ${t('recovery')} ${s.recoverySeconds}s` : ''}`;
+    return `${s.reps} × ${body}${s.recoverySeconds ? ` — ${recoveryLabel} ${s.recoverySeconds}s` : ''}`;
   }
   return body;
 }
