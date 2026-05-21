@@ -1,7 +1,4 @@
 // Compute VDOT from a recent race performance using Daniels' formula.
-// VDOT = (-4.60 + 0.182258*v + 0.000104*v^2) / (0.8 + 0.1894393*e^(-0.012778*t) + 0.2989558*e^(-0.1932605*t))
-// where v = m/min, t = minutes.
-
 export interface RaceInput {
   distanceMeters: number;
   timeSeconds: number;
@@ -17,8 +14,19 @@ export function computeVdot(race: RaceInput): number {
 }
 
 export const RACE_PRESETS = {
+  '1500m': 1500,
+  '3k': 3000,
   '5k': 5000,
   '10k': 10000,
   hm: 21097.5,
   marathon: 42195,
 } as const;
+
+export const RACE_PRESET_LABELS: Record<keyof typeof RACE_PRESETS, string> = {
+  '1500m': '1500 m',
+  '3k': '3 km',
+  '5k': '5 km',
+  '10k': '10 km',
+  hm: 'Semi-marathon',
+  marathon: 'Marathon',
+};

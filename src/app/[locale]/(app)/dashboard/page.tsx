@@ -17,13 +17,14 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
 
-  const [{ data: profile }, { data: sub }, { data: blockRow }] = await Promise.all([
+  const [{ data: profile }, { data: sub }, { data: blockRow }, { data: primaryRace }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
     supabase.from('training_blocks').select('*').eq('user_id', user.id).order('start_date', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('target_races').select('*').eq('user_id', user.id).eq('is_primary', true).gte('race_date', new Date().toISOString().slice(0, 10)).order('race_date', { ascending: true }).limit(1).maybeSingle(),
   ]);
 
-  if (!profile || !profile.vdot) redirect(`/${locale}/onboarding`);
+  if (!profile || !profile.onboarded || !profile.vdot) redirect(`/${locale}/onboarding`);
 
   let block: TrainingBlock;
   if (blockRow && new Date(blockRow.end_date) >= new Date()) {
@@ -40,12 +41,20 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
       trackCycle: profile.track_cycle,
       timeConstraintsMinPerSession: profile.time_constraints_min ?? undefined,
     };
-    block = generatePlan({ profile: runner, startDate: new Date(), weeks: 4, locale: locale as any });
+    block = generatePlan({
+      profile: runner,
+      startDate: new Date(),
+      weeks: 4,
+      locale: locale as any,
+      raceDate: primaryRace?.race_date ? new Date(primaryRace.race_date) : undefined,
+      raceDistanceMeters: primaryRace?.distance_meters ?? undefined,
+    });
     await supabase.from('training_blocks').insert({
       user_id: user.id,
       start_date: block.startDate,
       end_date: block.endDate,
       payload: block,
+      target_race_id: primaryRace?.id ?? null,
     });
   }
 
