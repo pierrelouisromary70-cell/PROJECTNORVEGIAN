@@ -8,6 +8,9 @@ export default async function RacesPage({ params: { locale } }: { params: { loca
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
-  const { data: races } = await supabase.from('target_races').select('*').eq('user_id', user.id).order('race_date', { ascending: true });
-  return <RacesClient userId={user.id} initial={races ?? []} />;
+  const [{ data: races }, { data: profile }] = await Promise.all([
+    supabase.from('target_races').select('*').eq('user_id', user.id).order('race_date', { ascending: true }),
+    supabase.from('profiles').select('vdot').eq('id', user.id).maybeSingle(),
+  ]);
+  return <RacesClient userId={user.id} currentVdot={Number(profile?.vdot ?? 40)} initial={races ?? []} />;
 }

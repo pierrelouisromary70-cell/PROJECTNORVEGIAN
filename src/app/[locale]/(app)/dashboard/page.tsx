@@ -21,7 +21,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
     supabase.from('training_blocks').select('*').eq('user_id', user.id).order('start_date', { ascending: false }).limit(1).maybeSingle(),
-    supabase.from('target_races').select('*').eq('user_id', user.id).eq('is_primary', true).gte('race_date', new Date().toISOString().slice(0, 10)).order('race_date', { ascending: true }).limit(1).maybeSingle(),
+    supabase.from('target_races').select('*').eq('user_id', user.id).eq('priority', 'A').gte('race_date', new Date().toISOString().slice(0, 10)).order('race_date', { ascending: true }).limit(1).maybeSingle(),
   ]);
 
   if (!profile || !profile.onboarded || !profile.vdot) redirect(`/${locale}/onboarding`);
@@ -48,6 +48,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
       locale: locale as any,
       raceDate: primaryRace?.race_date ? new Date(primaryRace.race_date) : undefined,
       raceDistanceMeters: primaryRace?.distance_meters ?? undefined,
+      racePriority: (primaryRace?.priority as 'A' | 'B' | 'C' | undefined) ?? 'A',
     });
     await supabase.from('training_blocks').insert({
       user_id: user.id,
