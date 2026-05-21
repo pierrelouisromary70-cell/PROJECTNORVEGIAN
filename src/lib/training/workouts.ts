@@ -1,13 +1,29 @@
 import type { Workout, WorkoutType } from './types';
 import type { Locale } from '@/i18n/config';
+import {
+  HILL_VARIANTS,
+  LT1_AM_VARIANTS,
+  LT1_PM_VARIANTS,
+  LT2_VARIANTS,
+  PROGRESSIVE_VARIANT,
+  SPEED_VARIANTS,
+  VO2_VARIANTS,
+  type SessionVariant,
+} from './variants';
 
 interface BuildArgs {
   date: string;
   weeklyKm: number;
   daysPerWeek: number;
   index: number;
+  weekIndex?: number;
   doubleDay?: 'AM' | 'PM';
   locale?: Locale;
+}
+
+function pickVariant<T extends SessionVariant>(variants: T[], weekIndex: number | undefined): T {
+  const i = (weekIndex ?? 0) % variants.length;
+  return variants[i];
 }
 
 const FR = {
@@ -26,52 +42,52 @@ const FR = {
   lt1_threshold: {
     title: 'Seuil bas (LT1 — sous-seuil)',
     purpose: "Augmenter la capacité à oxyder le lactate à intensité modérée. Pierre angulaire de la méthode norvégienne — on accumule du temps au seuil sans s'épuiser.",
-    feel: 'Effort soutenu mais contrôlé. Vous pourriez parler par phrases courtes. Lactate ≈ 2.0–2.5 mmol/L.',
-    guidance: ['Ne jamais dépasser l\'allure prescrite — c\'est le piège classique', 'Vous devez finir la séance en pensant pouvoir en faire une autre dans 6h', 'Récupérations courtes en trot léger'],
+    feel: 'Effort soutenu mais contrôlé.',
+    guidance: ['Ne jamais dépasser l\'allure prescrite', 'Récupérations courtes en trot léger'],
   },
   lt2_threshold: {
     title: 'Seuil haut (LT2)',
-    purpose: "Repousser le seuil lactique haut. Travail classique au seuil ~1h d'allure de compétition.",
-    feel: 'Inconfort contrôlé. 7/10 sur l\'échelle d\'effort. Vous parlez par mots isolés.',
-    guidance: ['Échauffement complet impératif (20 min)', 'Le dernier interval ne doit pas être plus rapide que le premier', 'Lactate ≈ 3.5–4.0 mmol/L'],
+    purpose: "Repousser le seuil lactique haut.",
+    feel: 'Inconfort contrôlé. 7/10 sur l\'échelle d\'effort.',
+    guidance: ['Échauffement complet impératif (20 min)', 'Lactate ≈ 3.5–4.0 mmol/L'],
   },
   vo2max: {
     title: 'VO2max',
     purpose: 'Améliorer la consommation maximale d\'oxygène et la puissance aérobie.',
-    feel: 'Dur. 8.5/10. Respiration intense, vous ne pouvez plus parler.',
-    guidance: ['Allure constante: ne partez pas trop vite', 'Récupérations actives en trot', 'À placer prudemment dans la semaine norvégienne — pas le jour d\'un seuil'],
+    feel: 'Dur. 8.5/10.',
+    guidance: ['Allure constante: ne partez pas trop vite', 'Récupérations actives en trot'],
   },
   hills: {
-    title: 'Côtes courtes',
-    purpose: 'Force, économie de course, puissance neuromusculaire sans le stress métabolique des intervalles plats.',
-    feel: 'Effort énergique mais court. Vous récupérez à la descente.',
-    guidance: ['Pente 5–8%, durée 30–60s', 'Posture droite, cadence rapide', 'Marchez/trottinez à la descente'],
+    title: 'Côtes',
+    purpose: 'Force, économie de course, puissance neuromusculaire.',
+    feel: 'Effort énergique.',
+    guidance: ['Posture droite, cadence rapide'],
   },
   strides: {
     title: 'Lignes droites (strides)',
     purpose: 'Travail technique et neuromusculaire, sans fatigue.',
-    feel: 'Vif, fluide, contrôlé. ~95% de votre vitesse max sur ~20s.',
-    guidance: ['À la fin d\'un footing facile', 'Récupération complète entre chaque (~1 min marche)', '4 à 8 répétitions'],
+    feel: 'Vif, fluide, contrôlé.',
+    guidance: ['À la fin d\'un footing facile', 'Récupération complète entre chaque', '4 à 8 répétitions'],
   },
-  recovery: { title: 'Récupération active', purpose: 'Favoriser la circulation sans ajouter de fatigue.', feel: 'Très facile. Plus lent que votre allure facile habituelle.', guidance: ['Court (20–40 min)', 'Terrain plat', 'Optionnel si très fatigué'] },
-  rest: { title: 'Repos', purpose: "L'adaptation se fait au repos, pas à l'entraînement. C'est ici que vous progressez.", feel: 'Reposé.', guidance: ['Sommeil 8h+', 'Hydratation', 'Mobilité douce facultative'] },
-  race_pace: { title: 'Allure spécifique', purpose: 'Habituer l\'organisme à l\'allure exacte de votre objectif.', feel: "Comme le jour J, mais plus court.", guidance: ['Tenue/chaussures de course recommandées', 'Nutrition de course à tester'] },
-  cross_training: { title: 'Cross-training', purpose: 'Volume aérobie sans impact (vélo, natation, elliptique).', feel: 'Conversationnel.', guidance: ['45–75 min', 'Utile pendant les semaines de pic ou en cas de douleur naissante'] },
+  recovery: { title: 'Récupération active', purpose: 'Favoriser la circulation.', feel: 'Très facile.', guidance: ['Court (20–40 min)'] },
+  rest: { title: 'Repos', purpose: "L'adaptation se fait au repos.", feel: 'Reposé.', guidance: ['Sommeil 8h+', 'Hydratation'] },
+  race_pace: { title: 'Allure spécifique', purpose: 'Habituer l\'organisme à l\'allure exacte de votre objectif.', feel: "Comme le jour J, mais plus court.", guidance: ['Chaussures de course recommandées', 'Nutrition de course à tester'] },
+  cross_training: { title: 'Cross-training', purpose: 'Volume aérobie sans impact.', feel: 'Conversationnel.', guidance: ['45–75 min'] },
   double_threshold: { title: 'Journée double seuil', purpose: '', feel: '', guidance: [] },
 } as const;
 
 const EN = {
-  easy: { title: 'Easy run', purpose: 'Aerobic volume. Most of your weekly distance must be easy so you can recover between hard sessions.', feel: 'You must be able to hold a full conversation. If you are out of breath, slow down.', guidance: ['Nasal breathing possible most of the time', 'HR < 75% HRmax', 'When in doubt, you\'re too fast'] },
-  long: { title: 'Long run', purpose: 'Aerobic base, running economy, musculo-tendinous robustness.', feel: 'Comfortable throughout. The last 20% may bite but never hard.', guidance: ['Practice race-day fueling', 'Steady cadence', 'Hilly terrain welcome'] },
-  lt1_threshold: { title: 'Sub-threshold (LT1)', purpose: 'Improve lactate clearance at moderate intensity — the cornerstone of the Norwegian method. Accumulate threshold time without depletion.', feel: 'Sustained but controlled. Short sentences only. Lactate ≈ 2.0–2.5 mmol/L.', guidance: ['Never exceed the prescribed pace — the classic trap', 'You should finish thinking you could do it again in 6h', 'Short jog recoveries'] },
-  lt2_threshold: { title: 'Threshold (LT2)', purpose: 'Push the upper lactate threshold. Classical ~1h race-pace effort work.', feel: 'Controlled discomfort. 7/10 RPE. Single-word answers only.', guidance: ['Full 20-min warm-up required', 'Last rep no faster than the first', 'Lactate ≈ 3.5–4.0 mmol/L'] },
-  vo2max: { title: 'VO2max', purpose: 'Improve maximal oxygen uptake and aerobic power.', feel: 'Hard. 8.5/10. Heavy breathing, no talking.', guidance: ['Even-paced — don\'t start too fast', 'Active jog recovery', 'Place carefully in a Norwegian week'] },
-  hills: { title: 'Short hills', purpose: 'Strength, running economy, neuromuscular power without flat-interval metabolic stress.', feel: 'Strong but short. Recover on the way down.', guidance: ['5–8% grade, 30–60s', 'Upright posture, fast cadence', 'Walk/jog down'] },
-  strides: { title: 'Strides', purpose: 'Technique and neuromuscular work, no fatigue cost.', feel: 'Snappy, smooth, controlled. ~95% max speed for ~20s.', guidance: ['At the end of an easy run', 'Full recovery between reps (~1 min walk)', '4 to 8 reps'] },
-  recovery: { title: 'Recovery jog', purpose: 'Circulation without added fatigue.', feel: 'Very easy.', guidance: ['Short (20–40 min)', 'Flat terrain', 'Skip if very tired'] },
-  rest: { title: 'Rest', purpose: 'Adaptation happens at rest, not in training. This is where you grow.', feel: 'Rested.', guidance: ['8h+ sleep', 'Hydration', 'Optional gentle mobility'] },
-  race_pace: { title: 'Race-pace work', purpose: 'Get your body used to your exact goal pace.', feel: 'Like race day, shorter.', guidance: ['Race shoes recommended', 'Test race-day fueling'] },
-  cross_training: { title: 'Cross-training', purpose: 'Aerobic volume without impact (bike, swim, elliptical).', feel: 'Conversational.', guidance: ['45–75 min', 'Useful in peak weeks or with a niggle'] },
+  easy: { title: 'Easy run', purpose: 'Aerobic volume.', feel: 'You can hold a conversation.', guidance: ['HR < 75% HRmax'] },
+  long: { title: 'Long run', purpose: 'Aerobic base.', feel: 'Comfortable throughout.', guidance: ['Practice race-day fueling'] },
+  lt1_threshold: { title: 'Sub-threshold (LT1)', purpose: 'Improve lactate clearance.', feel: 'Sustained but controlled.', guidance: ['Never exceed the prescribed pace'] },
+  lt2_threshold: { title: 'Threshold (LT2)', purpose: 'Push the upper lactate threshold.', feel: 'Controlled discomfort.', guidance: ['Full 20-min warm-up required'] },
+  vo2max: { title: 'VO2max', purpose: 'Improve maximal oxygen uptake.', feel: 'Hard.', guidance: ['Even-paced'] },
+  hills: { title: 'Hills', purpose: 'Strength.', feel: 'Strong but short.', guidance: ['Upright posture'] },
+  strides: { title: 'Strides', purpose: 'Technique work.', feel: 'Snappy, smooth.', guidance: ['At end of an easy run'] },
+  recovery: { title: 'Recovery jog', purpose: 'Circulation.', feel: 'Very easy.', guidance: ['Short'] },
+  rest: { title: 'Rest', purpose: 'Adaptation happens at rest.', feel: 'Rested.', guidance: ['8h+ sleep'] },
+  race_pace: { title: 'Race-pace work', purpose: 'Get your body used to your goal pace.', feel: 'Like race day.', guidance: ['Race shoes recommended'] },
+  cross_training: { title: 'Cross-training', purpose: 'Aerobic volume without impact.', feel: 'Conversational.', guidance: ['45–75 min'] },
   double_threshold: { title: 'Double-threshold day', purpose: '', feel: '', guidance: [] },
 } as const;
 
@@ -92,44 +108,120 @@ export function buildLong({ date, weeklyKm, locale }: BuildArgs): Workout {
   return { id: nextId(date), date, type: 'long', title: c.title, totalDistanceMeters: km * 1000, totalDurationSeconds: km * 320, rpe: 4, purpose: c.purpose, feel: c.feel, guidance: [...c.guidance], steps: [{ distanceMeters: km * 1000, pace: 'long' }] };
 }
 
-export function buildLt1AM({ date, weeklyKm, locale }: BuildArgs): Workout {
+export function buildLt1AM({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
   const c = copy(locale).lt1_threshold;
-  const reps = weeklyKm >= 80 ? 6 : 5;
-  return { id: nextId(date, '-am'), date, type: 'lt1_threshold', title: `${c.title} — AM`, totalDistanceMeters: reps * 1000 + 4000, totalDurationSeconds: 60 * 60, rpe: 6, isDouble: true, amPm: 'AM', purpose: c.purpose, feel: c.feel, guidance: [...c.guidance], steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, { reps, distanceMeters: 1000, pace: 'lt1', recoverySeconds: 60 }, { distanceMeters: 2000, pace: 'easy', note: 'CD' }] };
+  const variant = pickVariant(LT1_AM_VARIANTS, weekIndex);
+  const work = variant.build(weeklyKm);
+  return {
+    id: nextId(date, '-am'), date, type: 'lt1_threshold',
+    title: `${c.title} — AM — ${variant.label}`,
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 4) * 1000),
+    totalDurationSeconds: 60 * 60, rpe: 6, isDouble: true, amPm: 'AM',
+    purpose: c.purpose + ' Structure : ' + variant.structure + '.',
+    feel: variant.feelHint,
+    guidance: [...c.guidance, ...variant.approachTips],
+    steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+  };
 }
 
-export function buildLt1PM({ date, weeklyKm, locale }: BuildArgs): Workout {
+export function buildLt1PM({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
   const c = copy(locale).lt1_threshold;
-  const reps = weeklyKm >= 80 ? 10 : 8;
-  return { id: nextId(date, '-pm'), date, type: 'lt1_threshold', title: `${c.title} — PM`, totalDistanceMeters: reps * 400 + 4000, totalDurationSeconds: 50 * 60, rpe: 7, isDouble: true, amPm: 'PM', purpose: c.purpose, feel: c.feel, guidance: [...c.guidance], steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, { reps, distanceMeters: 400, pace: 'lt1', recoverySeconds: 30 }, { distanceMeters: 2000, pace: 'easy', note: 'CD' }] };
+  const variant = pickVariant(LT1_PM_VARIANTS, weekIndex);
+  const work = variant.build(weeklyKm);
+  return {
+    id: nextId(date, '-pm'), date, type: 'lt1_threshold',
+    title: `${c.title} — PM — ${variant.label}`,
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 4) * 1000),
+    totalDurationSeconds: 50 * 60, rpe: 7, isDouble: true, amPm: 'PM',
+    purpose: c.purpose + ' Structure : ' + variant.structure + '.',
+    feel: variant.feelHint,
+    guidance: [...c.guidance, ...variant.approachTips],
+    steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+  };
 }
 
-export function buildSingleThreshold({ date, locale }: BuildArgs): Workout {
+export function buildSingleThreshold({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
   const c = copy(locale).lt2_threshold;
-  return { id: nextId(date), date, type: 'lt2_threshold', title: c.title, totalDistanceMeters: 12000, totalDurationSeconds: 60 * 60, rpe: 7, purpose: c.purpose, feel: c.feel, guidance: [...c.guidance], steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, { reps: 5, distanceMeters: 1000, pace: 'lt2', recoverySeconds: 60 }, { distanceMeters: 2500, pace: 'easy', note: 'CD' }] };
+  const variant = pickVariant(LT2_VARIANTS, weekIndex);
+  const work = variant.build(weeklyKm);
+  return {
+    id: nextId(date), date, type: 'lt2_threshold',
+    title: `${c.title} — ${variant.label}`,
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 5) * 1000),
+    totalDurationSeconds: 60 * 60, rpe: 7,
+    purpose: c.purpose + ' Structure : ' + variant.structure + '.',
+    feel: variant.feelHint,
+    guidance: [...c.guidance, ...variant.approachTips],
+    steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2500, pace: 'easy', note: 'CD' }],
+  };
 }
 
-export function buildVo2Max({ date, locale }: BuildArgs): Workout {
+export function buildVo2Max({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
   const c = copy(locale).vo2max;
-  return { id: nextId(date), date, type: 'vo2max', title: c.title, totalDistanceMeters: 10000, totalDurationSeconds: 55 * 60, rpe: 8.5, purpose: c.purpose, feel: c.feel, guidance: [...c.guidance], steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, { reps: 5, distanceMeters: 1000, pace: 'interval', recoverySeconds: 120 }, { distanceMeters: 2000, pace: 'easy', note: 'CD' }] };
+  const variant = pickVariant(VO2_VARIANTS, weekIndex);
+  const work = variant.build(weeklyKm);
+  return {
+    id: nextId(date), date, type: 'vo2max',
+    title: `${c.title} — ${variant.label}`,
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 4.5) * 1000),
+    totalDurationSeconds: 55 * 60, rpe: 8.5,
+    purpose: c.purpose + ' Structure : ' + variant.structure + '.',
+    feel: variant.feelHint,
+    guidance: [...c.guidance, ...variant.approachTips],
+    steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+  };
 }
 
-export function buildHills({ date, locale }: BuildArgs): Workout {
+export function buildHills({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
   const c = copy(locale).hills;
-  return { id: nextId(date), date, type: 'hills', title: c.title, totalDistanceMeters: 8000, totalDurationSeconds: 45 * 60, rpe: 7, purpose: c.purpose, feel: c.feel, guidance: [...c.guidance], steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, { reps: 10, durationSeconds: 45, pace: 'repetition', recoverySeconds: 90, note: 'uphill' }, { distanceMeters: 2000, pace: 'easy', note: 'CD' }] };
+  const variant = pickVariant(HILL_VARIANTS, weekIndex);
+  const work = variant.build(weeklyKm);
+  return {
+    id: nextId(date), date, type: 'hills',
+    title: `${c.title} — ${variant.label}`,
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 4) * 1000),
+    totalDurationSeconds: 45 * 60, rpe: 7,
+    purpose: c.purpose + ' Structure : ' + variant.structure + '.',
+    feel: variant.feelHint,
+    guidance: [...c.guidance, ...variant.approachTips],
+    steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+  };
 }
 
-/**
- * Race-pace workout, calibrated to the target race distance.
- * Used in the specific phase (4 weeks out → race week).
- */
+export function buildSpeed({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
+  const variant = pickVariant(SPEED_VARIANTS, weekIndex);
+  const work = variant.build(weeklyKm);
+  return {
+    id: nextId(date), date, type: 'vo2max',
+    title: `Vitesse — ${variant.label}`,
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 4) * 1000),
+    totalDurationSeconds: 45 * 60, rpe: 8,
+    purpose: 'Vitesse pure et tolérance lactique. Structure : ' + variant.structure + '.',
+    feel: variant.feelHint,
+    guidance: variant.approachTips,
+    steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+  };
+}
+
+export function buildProgressive({ date, locale }: BuildArgs): Workout {
+  const v = PROGRESSIVE_VARIANT;
+  return {
+    id: nextId(date), date, type: 'long',
+    title: `${v.label} — ${v.structure}`,
+    totalDistanceMeters: 12000, totalDurationSeconds: 60 * 60, rpe: 5,
+    purpose: "Apprend à votre corps à accélérer en état de fatigue. L'une des séances clés du marathon.",
+    feel: v.feelHint, guidance: v.approachTips,
+    steps: v.build(0),
+  };
+}
+
 export function buildRacePace({ date, locale }: BuildArgs, raceDistanceMeters: number): Workout {
   const c = copy(locale).race_pace;
   let reps: number, repDist: number, recovery: number, extraNote = '';
   if (raceDistanceMeters <= 5000) { reps = 5; repDist = 1000; recovery = 90; extraNote = 'Allure 5K cible'; }
   else if (raceDistanceMeters <= 10000) { reps = 4; repDist = 2000; recovery = 120; extraNote = 'Allure 10K cible'; }
   else if (raceDistanceMeters <= 21097.5) { reps = 3; repDist = 3000; recovery = 180; extraNote = 'Allure semi cible'; }
-  else { reps = 2; repDist = 6000; recovery = 240; extraNote = 'Allure marathon cible — insérée dans la sortie longue'; }
+  else { reps = 2; repDist = 6000; recovery = 240; extraNote = 'Allure marathon cible'; }
   let pace: 'marathon' | 'lt2' | 'interval';
   if (raceDistanceMeters <= 10000) pace = 'interval';
   else if (raceDistanceMeters <= 21097.5) pace = 'lt2';
@@ -145,9 +237,6 @@ export function buildRacePace({ date, locale }: BuildArgs, raceDistanceMeters: n
   };
 }
 
-/**
- * Long run with a race-pace block at the end (marathon prep, last 6 weeks).
- */
 export function buildProgressionLong({ date, weeklyKm, locale }: BuildArgs): Workout {
   const c = copy(locale).long;
   const totalKm = Math.max(16, Math.round(weeklyKm * 0.32));
@@ -157,39 +246,33 @@ export function buildProgressionLong({ date, weeklyKm, locale }: BuildArgs): Wor
     id: nextId(date), date, type: 'long',
     title: `${c.title} avec finish allure marathon`,
     totalDistanceMeters: totalKm * 1000, totalDurationSeconds: totalKm * 320, rpe: 6,
-    purpose: "Long en aérobie qui termine à allure marathon. Apprend à votre corps à courir vite quand il est fatigué — exactement ce qui se passe après le 30e km.",
+    purpose: "Long en aérobie qui termine à allure marathon. Apprend à votre corps à courir vite quand il est fatigué.",
     feel: 'Confortable les 65 premiers %. Les derniers km tirent comme le jour J, mais sous contrôle.',
     guidance: [`${easyKm} km faciles puis ${racePaceKm} km à allure marathon`, 'Nutrition de course pendant la partie facile', 'À placer 4 à 6 semaines avant un marathon'],
     steps: [{ distanceMeters: easyKm * 1000, pace: 'long', note: 'Partie facile' }, { distanceMeters: racePaceKm * 1000, pace: 'marathon', note: 'Bloc allure marathon' }],
   };
 }
 
-/**
- * Short-reps speed session for middle-distance prep (1500m-3K).
- */
 export function buildShortReps({ date, locale }: BuildArgs): Workout {
   return {
     id: nextId(date), date, type: 'vo2max',
     title: 'Rappels vitesse',
     totalDistanceMeters: 8000, totalDurationSeconds: 45 * 60, rpe: 8,
-    purpose: 'Vitesse pure et tolérance lactique. Spécifique des courses 1500-3000m. Court mais intense — entretient la qualité musculaire sans creuser la fatigue.',
+    purpose: 'Vitesse pure et tolérance lactique. Spécifique des courses 1500-3000m.',
     feel: 'Court, vif, propre. Chaque répétition doit être contrôlée techniquement.',
-    guidance: ['10×200m récup 1 min, ou 8×400m récup 90 s', 'Sur piste si possible', 'Garder la même allure du 1er au dernier', "À l'aise au milieu, intense à la fin"],
+    guidance: ['10×200m récup 1 min, ou 8×400m récup 90 s', 'Sur piste si possible'],
     steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, { reps: 10, distanceMeters: 200, pace: 'repetition', recoverySeconds: 60 }, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
   };
 }
 
-/**
- * Track session combining VO2max + R-pace — the "1500m race-rehearsal".
- */
 export function buildTrackSpecific({ date, locale }: BuildArgs): Workout {
   return {
     id: nextId(date), date, type: 'vo2max',
     title: 'Piste — spécifique 1500/3K',
     totalDistanceMeters: 11000, totalDurationSeconds: 60 * 60, rpe: 9,
-    purpose: "Combine puissance aérobie et vitesse pure. La séance qui prépare réellement un 1500m ou un 3000m de compétition.",
-    feel: "Très exigeant. Les dernières reps doivent piquer mais rester techniques. Si vous craquez sur les 200, l'allure VO2max était trop rapide.",
-    guidance: ['4×800m @ allure 3K récup 2 min', 'puis 4×200m @ allure 1500m récup 1 min', 'Sur piste 400 m', "À placer en phase spécifique 1500/3K uniquement"],
+    purpose: "Combine puissance aérobie et vitesse pure.",
+    feel: "Très exigeant. Les dernières reps doivent piquer mais rester techniques.",
+    guidance: ['4×800m @ allure 3K récup 2 min', 'puis 4×200m @ allure 1500m récup 1 min', "À placer en phase spécifique 1500/3K"],
     steps: [
       { distanceMeters: 2500, pace: 'easy', note: 'WU' },
       { reps: 4, distanceMeters: 800, pace: 'interval', recoverySeconds: 120, note: 'Allure 3K' },
@@ -199,10 +282,6 @@ export function buildTrackSpecific({ date, locale }: BuildArgs): Workout {
   };
 }
 
-/**
- * Marathon-specific long run that grows with weeks-to-race and includes
- * a race-pace block when appropriate (build/specific phases, 4-10 weeks out).
- */
 export function buildMarathonLongRun({ date, weeklyKm, locale }: BuildArgs, lengthKm: number, includeRacePace: boolean): Workout {
   const c = copy(locale).long;
   if (!includeRacePace) {
@@ -210,9 +289,9 @@ export function buildMarathonLongRun({ date, weeklyKm, locale }: BuildArgs, leng
       id: nextId(date), date, type: 'long',
       title: `${c.title} progressive (${lengthKm} km)`,
       totalDistanceMeters: lengthKm * 1000, totalDurationSeconds: lengthKm * 330, rpe: 5,
-      purpose: "Endurance fondamentale, économie de course, robustesse musculo-tendineuse. Le pilier de la prépa marathon.",
-      feel: "Confortable du début à la fin. Les 5 derniers km peuvent piquer mais sans forcer.",
-      guidance: [`${lengthKm} km à allure facile-longue`, "Nutrition de course à tester (gels, boisson)", "Allure soutenue mais nasale — si vous êtes essoufflé, ralentissez"],
+      purpose: "Endurance fondamentale. Le pilier de la prépa marathon.",
+      feel: "Confortable du début à la fin.",
+      guidance: [`${lengthKm} km à allure facile-longue`, "Nutrition de course à tester"],
       steps: [{ distanceMeters: lengthKm * 1000, pace: 'long' }],
     };
   }
@@ -222,9 +301,9 @@ export function buildMarathonLongRun({ date, weeklyKm, locale }: BuildArgs, leng
     id: nextId(date), date, type: 'long',
     title: `Long progressif ${lengthKm} km avec finish allure marathon`,
     totalDistanceMeters: lengthKm * 1000, totalDurationSeconds: lengthKm * 320, rpe: 6,
-    purpose: "Apprend à votre corps à courir vite quand il est fatigué — exactement ce qui se passe après le 30e km de votre marathon.",
-    feel: "Confortable les 65 premiers %. La transition vers l'allure marathon doit être nette, sans hésitation.",
-    guidance: [`${easyKm} km faciles puis ${racePaceKm} km à allure marathon`, "Nutrition de course pendant les premiers km — testez vos gels", "Idéale 4 à 6 semaines avant le marathon"],
+    purpose: "Apprend à courir vite en état de fatigue.",
+    feel: "Confortable les 65 premiers %.",
+    guidance: [`${easyKm} km faciles puis ${racePaceKm} km à allure marathon`, "Idéale 4 à 6 semaines avant le marathon"],
     steps: [{ distanceMeters: easyKm * 1000, pace: 'long', note: 'Partie facile' }, { distanceMeters: racePaceKm * 1000, pace: 'marathon', note: 'Bloc allure marathon' }],
   };
 }
