@@ -164,6 +164,71 @@ export function buildProgressionLong({ date, weeklyKm, locale }: BuildArgs): Wor
   };
 }
 
+/**
+ * Short-reps speed session for middle-distance prep (1500m-3K).
+ */
+export function buildShortReps({ date, locale }: BuildArgs): Workout {
+  return {
+    id: nextId(date), date, type: 'vo2max',
+    title: 'Rappels vitesse',
+    totalDistanceMeters: 8000, totalDurationSeconds: 45 * 60, rpe: 8,
+    purpose: 'Vitesse pure et tolérance lactique. Spécifique des courses 1500-3000m. Court mais intense — entretient la qualité musculaire sans creuser la fatigue.',
+    feel: 'Court, vif, propre. Chaque répétition doit être contrôlée techniquement.',
+    guidance: ['10×200m récup 1 min, ou 8×400m récup 90 s', 'Sur piste si possible', 'Garder la même allure du 1er au dernier', "À l'aise au milieu, intense à la fin"],
+    steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, { reps: 10, distanceMeters: 200, pace: 'repetition', recoverySeconds: 60 }, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+  };
+}
+
+/**
+ * Track session combining VO2max + R-pace — the "1500m race-rehearsal".
+ */
+export function buildTrackSpecific({ date, locale }: BuildArgs): Workout {
+  return {
+    id: nextId(date), date, type: 'vo2max',
+    title: 'Piste — spécifique 1500/3K',
+    totalDistanceMeters: 11000, totalDurationSeconds: 60 * 60, rpe: 9,
+    purpose: "Combine puissance aérobie et vitesse pure. La séance qui prépare réellement un 1500m ou un 3000m de compétition.",
+    feel: "Très exigeant. Les dernières reps doivent piquer mais rester techniques. Si vous craquez sur les 200, l'allure VO2max était trop rapide.",
+    guidance: ['4×800m @ allure 3K récup 2 min', 'puis 4×200m @ allure 1500m récup 1 min', 'Sur piste 400 m', "À placer en phase spécifique 1500/3K uniquement"],
+    steps: [
+      { distanceMeters: 2500, pace: 'easy', note: 'WU' },
+      { reps: 4, distanceMeters: 800, pace: 'interval', recoverySeconds: 120, note: 'Allure 3K' },
+      { reps: 4, distanceMeters: 200, pace: 'repetition', recoverySeconds: 60, note: 'Allure 1500m' },
+      { distanceMeters: 2000, pace: 'easy', note: 'CD' },
+    ],
+  };
+}
+
+/**
+ * Marathon-specific long run that grows with weeks-to-race and includes
+ * a race-pace block when appropriate (build/specific phases, 4-10 weeks out).
+ */
+export function buildMarathonLongRun({ date, weeklyKm, locale }: BuildArgs, lengthKm: number, includeRacePace: boolean): Workout {
+  const c = copy(locale).long;
+  if (!includeRacePace) {
+    return {
+      id: nextId(date), date, type: 'long',
+      title: `${c.title} progressive (${lengthKm} km)`,
+      totalDistanceMeters: lengthKm * 1000, totalDurationSeconds: lengthKm * 330, rpe: 5,
+      purpose: "Endurance fondamentale, économie de course, robustesse musculo-tendineuse. Le pilier de la prépa marathon.",
+      feel: "Confortable du début à la fin. Les 5 derniers km peuvent piquer mais sans forcer.",
+      guidance: [`${lengthKm} km à allure facile-longue`, "Nutrition de course à tester (gels, boisson)", "Allure soutenue mais nasale — si vous êtes essoufflé, ralentissez"],
+      steps: [{ distanceMeters: lengthKm * 1000, pace: 'long' }],
+    };
+  }
+  const racePaceKm = Math.min(10, Math.max(6, Math.round(lengthKm * 0.35)));
+  const easyKm = lengthKm - racePaceKm;
+  return {
+    id: nextId(date), date, type: 'long',
+    title: `Long progressif ${lengthKm} km avec finish allure marathon`,
+    totalDistanceMeters: lengthKm * 1000, totalDurationSeconds: lengthKm * 320, rpe: 6,
+    purpose: "Apprend à votre corps à courir vite quand il est fatigué — exactement ce qui se passe après le 30e km de votre marathon.",
+    feel: "Confortable les 65 premiers %. La transition vers l'allure marathon doit être nette, sans hésitation.",
+    guidance: [`${easyKm} km faciles puis ${racePaceKm} km à allure marathon`, "Nutrition de course pendant les premiers km — testez vos gels", "Idéale 4 à 6 semaines avant le marathon"],
+    steps: [{ distanceMeters: easyKm * 1000, pace: 'long', note: 'Partie facile' }, { distanceMeters: racePaceKm * 1000, pace: 'marathon', note: 'Bloc allure marathon' }],
+  };
+}
+
 export function buildRest({ date, locale }: BuildArgs): Workout {
   const c = copy(locale).rest;
   return { id: nextId(date), date, type: 'rest', title: c.title, totalDistanceMeters: 0, totalDurationSeconds: 0, rpe: 0, purpose: c.purpose, feel: c.feel, guidance: [...c.guidance], steps: [] };
