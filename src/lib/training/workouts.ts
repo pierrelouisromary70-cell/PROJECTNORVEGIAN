@@ -8,6 +8,7 @@ import {
   PROGRESSIVE_VARIANT,
   SPEED_VARIANTS,
   VO2_VARIANTS,
+  VOLUME_THRESHOLD_VARIANTS,
   type SessionVariant,
 } from './variants';
 
@@ -203,6 +204,25 @@ export function buildSpeed({ date, weeklyKm, weekIndex, locale }: BuildArgs): Wo
   };
 }
 
+/**
+ * Volume + threshold session: long run with embedded sub-threshold or
+ * marathon-pace blocks. Rotates through 3 structures.
+ */
+export function buildVolumeThreshold({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
+  const variant = pickVariant(VOLUME_THRESHOLD_VARIANTS, weekIndex);
+  const work = variant.build(weeklyKm);
+  const totalKm = variant.workKm(weeklyKm);
+  return {
+    id: nextId(date), date, type: 'long',
+    title: `${variant.label} (${totalKm} km)`,
+    totalDistanceMeters: totalKm * 1000, totalDurationSeconds: totalKm * 320, rpe: 6,
+    purpose: "Volume aérobie + qualité sous fatigue. La séance signature pour développer simultanément l'endurance et le seuil. " + variant.structure + '.',
+    feel: variant.feelHint,
+    guidance: variant.approachTips,
+    steps: work,
+  };
+}
+
 export function buildProgressive({ date, locale }: BuildArgs): Workout {
   const v = PROGRESSIVE_VARIANT;
   return {
@@ -246,9 +266,9 @@ export function buildProgressionLong({ date, weeklyKm, locale }: BuildArgs): Wor
     id: nextId(date), date, type: 'long',
     title: `${c.title} avec finish allure marathon`,
     totalDistanceMeters: totalKm * 1000, totalDurationSeconds: totalKm * 320, rpe: 6,
-    purpose: "Long en aérobie qui termine à allure marathon. Apprend à votre corps à courir vite quand il est fatigué.",
-    feel: 'Confortable les 65 premiers %. Les derniers km tirent comme le jour J, mais sous contrôle.',
-    guidance: [`${easyKm} km faciles puis ${racePaceKm} km à allure marathon`, 'Nutrition de course pendant la partie facile', 'À placer 4 à 6 semaines avant un marathon'],
+    purpose: "Long en aérobie qui termine à allure marathon.",
+    feel: 'Confortable les 65 premiers %.',
+    guidance: [`${easyKm} km faciles puis ${racePaceKm} km à allure marathon`, 'À placer 4 à 6 semaines avant un marathon'],
     steps: [{ distanceMeters: easyKm * 1000, pace: 'long', note: 'Partie facile' }, { distanceMeters: racePaceKm * 1000, pace: 'marathon', note: 'Bloc allure marathon' }],
   };
 }
@@ -258,8 +278,8 @@ export function buildShortReps({ date, locale }: BuildArgs): Workout {
     id: nextId(date), date, type: 'vo2max',
     title: 'Rappels vitesse',
     totalDistanceMeters: 8000, totalDurationSeconds: 45 * 60, rpe: 8,
-    purpose: 'Vitesse pure et tolérance lactique. Spécifique des courses 1500-3000m.',
-    feel: 'Court, vif, propre. Chaque répétition doit être contrôlée techniquement.',
+    purpose: 'Vitesse pure et tolérance lactique. Spécifique 1500-3000m.',
+    feel: 'Court, vif, propre.',
     guidance: ['10×200m récup 1 min, ou 8×400m récup 90 s', 'Sur piste si possible'],
     steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, { reps: 10, distanceMeters: 200, pace: 'repetition', recoverySeconds: 60 }, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
   };
@@ -271,8 +291,8 @@ export function buildTrackSpecific({ date, locale }: BuildArgs): Workout {
     title: 'Piste — spécifique 1500/3K',
     totalDistanceMeters: 11000, totalDurationSeconds: 60 * 60, rpe: 9,
     purpose: "Combine puissance aérobie et vitesse pure.",
-    feel: "Très exigeant. Les dernières reps doivent piquer mais rester techniques.",
-    guidance: ['4×800m @ allure 3K récup 2 min', 'puis 4×200m @ allure 1500m récup 1 min', "À placer en phase spécifique 1500/3K"],
+    feel: "Très exigeant.",
+    guidance: ['4×800m @ allure 3K récup 2 min', 'puis 4×200m @ allure 1500m récup 1 min'],
     steps: [
       { distanceMeters: 2500, pace: 'easy', note: 'WU' },
       { reps: 4, distanceMeters: 800, pace: 'interval', recoverySeconds: 120, note: 'Allure 3K' },
@@ -289,7 +309,7 @@ export function buildMarathonLongRun({ date, weeklyKm, locale }: BuildArgs, leng
       id: nextId(date), date, type: 'long',
       title: `${c.title} progressive (${lengthKm} km)`,
       totalDistanceMeters: lengthKm * 1000, totalDurationSeconds: lengthKm * 330, rpe: 5,
-      purpose: "Endurance fondamentale. Le pilier de la prépa marathon.",
+      purpose: "Endurance fondamentale.",
       feel: "Confortable du début à la fin.",
       guidance: [`${lengthKm} km à allure facile-longue`, "Nutrition de course à tester"],
       steps: [{ distanceMeters: lengthKm * 1000, pace: 'long' }],
