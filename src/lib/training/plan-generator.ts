@@ -30,6 +30,7 @@ import {
   buildStrides,
   buildTrackSpecific,
   buildVo2Max,
+  buildVolumeThreshold,
 } from './workouts';
 
 export interface GeneratePlanArgs {
@@ -78,7 +79,7 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
           workouts.push(profile.daysPerWeek >= 6 ? buildEasy(base) : buildRest(base));
           break;
 
-        case 1: // Tue — first quality session
+        case 1:
           if (phase === 'specific' && raceDistanceMeters) {
             workouts.push(buildRacePace(base, raceDistanceMeters));
           } else if (family === 'middle' && phase === 'build' && sSessions >= 1) {
@@ -97,7 +98,7 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
           workouts.push(buildStrides(base));
           break;
 
-        case 3: // Thu — second quality session
+        case 3:
           if (phase === 'taper') {
             if (racePriority === 'A' && raceDistanceMeters) workouts.push(buildRacePace(base, raceDistanceMeters));
             else workouts.push(buildSingleThreshold(base));
@@ -120,7 +121,7 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
           workouts.push(profile.daysPerWeek >= 7 ? buildEasy(base) : buildRest(base));
           break;
 
-        case 5: // Sat — long run, scaled by race family
+        case 5:
           workouts.push(buildSaturdayLongRun({ base, family, phase, phaseKm, weeksToRace }));
           break;
 
@@ -162,7 +163,10 @@ function buildSaturdayLongRun({ base, family, phase, phaseKm, weeksToRace }: Lon
   if (phase === 'taper') {
     return buildEasy({ ...base, weeklyKm: Math.round(phaseKm * 0.5) });
   }
+  const wi = base.weekIndex;
+  // Marathon prep: rotate between classical long, volume+threshold, and progressive.
   if (family === 'marathon' && phase !== 'recovery') {
+    if (wi !== undefined && wi % 3 === 1) return buildVolumeThreshold(base);
     const km = marathonLongRunKm(weeksToRace, phaseKm);
     const includeRacePace = weeksToRace >= 4 && weeksToRace <= 10;
     return buildMarathonLongRun(base, km, includeRacePace);
@@ -171,9 +175,10 @@ function buildSaturdayLongRun({ base, family, phase, phaseKm, weeksToRace }: Lon
     const km = midLongRunKm(family, phaseKm);
     return buildLong({ ...base, weeklyKm: km * (1 / 0.28) });
   }
-  // Long-distance (semi) build: every 3rd Saturday becomes a progressive run for variety
-  if (family === 'long' && phase === 'build' && base.weekIndex !== undefined && base.weekIndex % 3 === 2) {
-    return buildProgressive(base);
+  // Long-distance (semi) build: rotate progressive (every 3rd week) and volume+threshold (every 4th).
+  if (family === 'long' && phase === 'build' && wi !== undefined) {
+    if (wi % 4 === 3) return buildVolumeThreshold(base);
+    if (wi % 3 === 2) return buildProgressive(base);
   }
   return buildLong(base);
 }
