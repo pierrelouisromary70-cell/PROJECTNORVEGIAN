@@ -7,6 +7,7 @@ import {
   LT2_VARIANTS,
   SPEED_VARIANTS,
   VO2_VARIANTS,
+  VOLUME_THRESHOLD_VARIANTS,
 } from './variants';
 import { buildSingleThreshold, buildVo2Max, buildHills, buildLt1AM, buildLt1PM } from './workouts';
 import type { RunnerProfile } from './types';
@@ -23,24 +24,36 @@ const intermediate: RunnerProfile = {
 };
 
 describe('Session variants — diversity', () => {
-  it('LT2 has at least 5 distinct structures', () => {
+  it('LT2 (SV2) has at least 10 distinct structures', () => {
     const labels = new Set(LT2_VARIANTS.map((v) => v.label));
-    expect(labels.size).toBeGreaterThanOrEqual(5);
+    expect(labels.size).toBeGreaterThanOrEqual(10);
   });
-  it('LT2 variants include pyramid AND continuous tempo', () => {
+  it('LT2 includes pyramid, continuous tempo, Mona fartlek AND high-volume sessions', () => {
     const labels = LT2_VARIANTS.map((v) => v.label.toLowerCase()).join(' ');
     expect(labels).toContain('pyramide');
     expect(labels).toContain('tempo continu');
+    expect(labels).toContain('mona');
+    expect(labels).toContain('10×1000');
   });
-  it('LT2 and VO2max each have at least 4 distinct structures', () => {
-    expect(LT2_VARIANTS.length).toBeGreaterThanOrEqual(4);
-    expect(VO2_VARIANTS.length).toBeGreaterThanOrEqual(4);
+  it('LT1 AM (SV1 sub-threshold) has at least 8 distinct structures', () => {
+    const labels = new Set(LT1_AM_VARIANTS.map((v) => v.label));
+    expect(labels.size).toBeGreaterThanOrEqual(8);
+  });
+  it('LT1 PM has at least 6 distinct structures', () => {
+    const labels = new Set(LT1_PM_VARIANTS.map((v) => v.label));
+    expect(labels.size).toBeGreaterThanOrEqual(6);
+  });
+  it('VO2max has at least 5 distinct structures', () => {
+    expect(VO2_VARIANTS.length).toBeGreaterThanOrEqual(5);
   });
   it('Hills include short, long AND fartlek variants', () => {
     const labels = HILL_VARIANTS.map((v) => v.label.toLowerCase()).join(' ');
     expect(labels).toContain('courtes');
     expect(labels).toContain('longues');
     expect(labels).toContain('fartlek');
+  });
+  it('Volume+Threshold variants exist with at least 3 structures', () => {
+    expect(VOLUME_THRESHOLD_VARIANTS.length).toBeGreaterThanOrEqual(3);
   });
   it('Every variant carries feel hint AND approach tips', () => {
     const all = [
@@ -50,6 +63,7 @@ describe('Session variants — diversity', () => {
       ...VO2_VARIANTS,
       ...HILL_VARIANTS,
       ...SPEED_VARIANTS,
+      ...VOLUME_THRESHOLD_VARIANTS,
     ];
     for (const v of all) {
       expect(v.feelHint.length).toBeGreaterThan(10);
@@ -93,14 +107,14 @@ describe('Variant rotation in workout builders', () => {
     expect(new Set(titles).size).toBeGreaterThanOrEqual(3);
   });
 
-  it('buildLt1AM returns different titles across week indexes', () => {
-    const titles = [0, 1, 2].map((w) => buildLt1AM({ ...base, weekIndex: w }).title);
-    expect(new Set(titles).size).toBeGreaterThanOrEqual(2);
+  it('buildLt1AM rotates through at least 5 structures across 8 weeks', () => {
+    const titles = [0, 1, 2, 3, 4, 5, 6, 7].map((w) => buildLt1AM({ ...base, weekIndex: w }).title);
+    expect(new Set(titles).size).toBeGreaterThanOrEqual(5);
   });
 
-  it('buildLt1PM rotates through 3 structures', () => {
-    const titles = [0, 1, 2].map((w) => buildLt1PM({ ...base, weekIndex: w }).title);
-    expect(new Set(titles).size).toBe(3);
+  it('buildLt1PM rotates through at least 5 structures across 7 weeks', () => {
+    const titles = [0, 1, 2, 3, 4, 5, 6].map((w) => buildLt1PM({ ...base, weekIndex: w }).title);
+    expect(new Set(titles).size).toBeGreaterThanOrEqual(5);
   });
 
   it('buildHills rotates through short / long / fartlek / ladder', () => {
@@ -175,5 +189,23 @@ describe('Plan generator — variant rotation across weeks', () => {
     const longs = block.weeks.flatMap((w) => w.workouts).filter((w) => w.type === 'long');
     const hasProgressive = longs.some((w) => w.title.toLowerCase().includes('progressif'));
     expect(hasProgressive).toBe(true);
+  });
+
+  it('A marathon prep block uses at least one Volume+Threshold long', () => {
+    const block = generatePlan({
+      profile: { ...intermediate, currentWeeklyKm: 110 },
+      startDate: new Date('2026-06-01'),
+      raceDate: new Date('2026-08-15'),
+      raceDistanceMeters: 42195,
+      racePriority: 'A',
+      weeks: 4,
+    });
+    const longs = block.weeks.flatMap((w) => w.workouts).filter((w) => w.type === 'long');
+    const hasVolumeThreshold = longs.some((w) =>
+      w.title.toLowerCase().includes('sous-seuil') ||
+      w.title.toLowerCase().includes('finish seuil') ||
+      w.title.toLowerCase().includes('marathon insérés'),
+    );
+    expect(hasVolumeThreshold).toBe(true);
   });
 });
