@@ -22,6 +22,7 @@ import {
   buildLt1AM,
   buildLt1PM,
   buildMarathonLongRun,
+  buildProgressive,
   buildRacePace,
   buildRest,
   buildShortReps,
@@ -41,31 +42,6 @@ export interface GeneratePlanArgs {
   locale?: Locale;
 }
 
-/**
- * Generate a Norwegian-style training block (3-4 weeks).
- *
- * Volume depends on:
- *   - The runner's experience level (beginner..elite)
- *   - The TARGET RACE distance — same runner gets ~80 km/wk for 1500m,
- *     ~140 km/wk for marathon (raceVolumeFactor).
- *
- * Session mix depends on the race family:
- *   - middle (1500-3K): more speed (short reps + track), less threshold
- *   - short (5K): balanced
- *   - medium (10K): threshold + VO2max
- *   - long (semi): threshold-heavy
- *   - marathon: easy/long volume dominant, fewer hard sessions
- *
- * Long run logic:
- *   - Marathon prep: progressive long that grows week-by-week, peaks at
- *     ~34 km 4-5 weeks pre-race, includes race-pace finish 4-10 weeks out.
- *   - Other distances: shorter "mid-long" ceiling (16-22 km).
- *
- * Race priority:
- *   - A : full taper, full specific phase
- *   - B : light cutback in race week, no full specific phase
- *   - C : no taper, normal training week (race replaces a workout)
- */
 export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
   const { profile, startDate, locale, raceDistanceMeters, racePriority = 'A' } = args;
   const weeksCount = args.weeks ?? 4;
@@ -95,7 +71,7 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
     const workouts: Workout[] = [];
     for (let d = 0; d < 7; d++) {
       const date = format(addDays(weekStart, d), 'yyyy-MM-dd');
-      const base = { date, weeklyKm: phaseKm, daysPerWeek: profile.daysPerWeek, index: d, locale } as const;
+      const base = { date, weeklyKm: phaseKm, daysPerWeek: profile.daysPerWeek, index: d, weekIndex: w, locale } as const;
 
       switch (d) {
         case 0:
@@ -175,7 +151,7 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
 }
 
 interface LongRunArgs {
-  base: { date: string; weeklyKm: number; daysPerWeek: number; index: number; locale?: Locale };
+  base: { date: string; weeklyKm: number; daysPerWeek: number; index: number; weekIndex?: number; locale?: Locale };
   family?: RaceFamily;
   phase: TrainingPhase;
   phaseKm: number;
@@ -194,6 +170,10 @@ function buildSaturdayLongRun({ base, family, phase, phaseKm, weeksToRace }: Lon
   if (family === 'middle' || family === 'short') {
     const km = midLongRunKm(family, phaseKm);
     return buildLong({ ...base, weeklyKm: km * (1 / 0.28) });
+  }
+  // Long-distance (semi) build: every 3rd Saturday becomes a progressive run for variety
+  if (family === 'long' && phase === 'build' && base.weekIndex !== undefined && base.weekIndex % 3 === 2) {
+    return buildProgressive(base);
   }
   return buildLong(base);
 }
