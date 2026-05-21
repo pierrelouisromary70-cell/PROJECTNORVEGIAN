@@ -2,10 +2,17 @@ import { addDays, format, startOfWeek } from 'date-fns';
 import type { Locale } from '@/i18n/config';
 import {
   inferExperience,
+  marathonLongRunKm,
+  midLongRunKm,
+  raceFamily,
   shouldDoubleThreshold,
+  speedSessionsPerWeek,
   suggestNextWeeklyKm,
-  targetWeeklyKmForLevel,
+  targetWeeklyKmForRace,
+  taperFactor,
   thresholdSessionsPerWeek,
+  type RaceFamily,
+  type RacePriority,
 } from './norwegian';
 import type { RunnerProfile, TrainingBlock, TrainingPhase, TrainingWeek, Workout } from './types';
 import {
@@ -14,11 +21,13 @@ import {
   buildLong,
   buildLt1AM,
   buildLt1PM,
-  buildProgressionLong,
+  buildMarathonLongRun,
   buildRacePace,
   buildRest,
+  buildShortReps,
   buildSingleThreshold,
   buildStrides,
+  buildTrackSpecific,
   buildVo2Max,
 } from './workouts';
 
@@ -28,67 +37,76 @@ export interface GeneratePlanArgs {
   weeks?: number;
   raceDate?: Date;
   raceDistanceMeters?: number;
+  racePriority?: RacePriority;
   locale?: Locale;
 }
 
 /**
  * Generate a Norwegian-style training block (3-4 weeks).
  *
- * Weekly architecture (adaptive):
- *   - Mon : rest (or easy for 6-7 day runners)
- *   - Tue : threshold session (double for advanced/elite)
- *   - Wed : easy + strides (technique, neuromuscular)
- *   - Thu : threshold OR VO2max OR hills, depending on phase + level
- *   - Fri : rest (or easy for 7-day runners)
- *   - Sat : long run (with race-pace finish in marathon specific phase)
- *   - Sun : easy
+ * Volume depends on:
+ *   - The runner's experience level (beginner..elite)
+ *   - The TARGET RACE distance — same runner gets ~80 km/wk for 1500m,
+ *     ~140 km/wk for marathon (raceVolumeFactor).
  *
- * Phase logic (when a race date is set):
- *   - Base    (race > 8w) : aerobic + sub-threshold introduction
- *   - Build   (race 4-8w) : full threshold work + hills/VO2max
- *   - Specific (race 1-4w): race-pace inserts, less hills
- *   - Taper   (race < 10d): volume down 30-50%, intensity preserved
+ * Session mix depends on the race family:
+ *   - middle (1500-3K): more speed (short reps + track), less threshold
+ *   - short (5K): balanced
+ *   - medium (10K): threshold + VO2max
+ *   - long (semi): threshold-heavy
+ *   - marathon: easy/long volume dominant, fewer hard sessions
+ *
+ * Long run logic:
+ *   - Marathon prep: progressive long that grows week-by-week, peaks at
+ *     ~34 km 4-5 weeks pre-race, includes race-pace finish 4-10 weeks out.
+ *   - Other distances: shorter "mid-long" ceiling (16-22 km).
+ *
+ * Race priority:
+ *   - A : full taper, full specific phase
+ *   - B : light cutback in race week, no full specific phase
+ *   - C : no taper, normal training week (race replaces a workout)
  */
 export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
-  const { profile, startDate, locale, raceDistanceMeters } = args;
+  const { profile, startDate, locale, raceDistanceMeters, racePriority = 'A' } = args;
   const weeksCount = args.weeks ?? 4;
   const level = inferExperience(profile);
-  const target = targetWeeklyKmForLevel(level);
+  const family: RaceFamily | undefined = raceDistanceMeters !== undefined ? raceFamily(raceDistanceMeters) : undefined;
+  const target = targetWeeklyKmForRace(level, raceDistanceMeters);
   const start = startOfWeek(startDate, { weekStartsOn: 1 });
-  const isMarathon = raceDistanceMeters !== undefined && raceDistanceMeters >= 30000;
 
   const weeks: TrainingWeek[] = [];
   let currentKm = profile.currentWeeklyKm;
 
   for (let w = 0; w < weeksCount; w++) {
     const weekStart = addDays(start, w * 7);
-    const phase: TrainingPhase = computePhase(w, weeksCount, args.raceDate, weekStart);
+    const phase: TrainingPhase = computePhase(w, weeksCount, args.raceDate, weekStart, racePriority);
     currentKm = suggestNextWeeklyKm(currentKm, target, w);
-    const tSessions = thresholdSessionsPerWeek(level, phase);
-    const doubles = shouldDoubleThreshold(level) && phase !== 'taper' && phase !== 'recovery';
+    const tSessions = thresholdSessionsPerWeek(level, phase, family);
+    const sSessions = family ? speedSessionsPerWeek(family, phase) : (phase === 'build' ? 1 : 0);
+    const doubles = shouldDoubleThreshold(level) && phase !== 'taper' && phase !== 'recovery' && family !== 'middle';
 
-    // Taper: scale down volume by 35%, keep intensity.
-    const phaseKm = phase === 'taper' ? Math.round(currentKm * 0.65) : currentKm;
+    let weekScale = 1.0;
+    if (phase === 'taper') weekScale = taperFactor(racePriority);
+    const phaseKm = Math.round(currentKm * weekScale);
+
+    const daysToRace = args.raceDate ? Math.max(0, (args.raceDate.getTime() - weekStart.getTime()) / 86400000) : 999;
+    const weeksToRace = Math.ceil(daysToRace / 7);
 
     const workouts: Workout[] = [];
     for (let d = 0; d < 7; d++) {
       const date = format(addDays(weekStart, d), 'yyyy-MM-dd');
-      const base = {
-        date,
-        weeklyKm: phaseKm,
-        daysPerWeek: profile.daysPerWeek,
-        index: d,
-        locale,
-      } as const;
+      const base = { date, weeklyKm: phaseKm, daysPerWeek: profile.daysPerWeek, index: d, locale } as const;
 
       switch (d) {
         case 0:
           workouts.push(profile.daysPerWeek >= 6 ? buildEasy(base) : buildRest(base));
           break;
 
-        case 1:
+        case 1: // Tue — first quality session
           if (phase === 'specific' && raceDistanceMeters) {
             workouts.push(buildRacePace(base, raceDistanceMeters));
+          } else if (family === 'middle' && phase === 'build' && sSessions >= 1) {
+            workouts.push(buildTrackSpecific(base));
           } else if (doubles && tSessions >= 3) {
             workouts.push(buildLt1AM(base));
             workouts.push(buildLt1PM(base));
@@ -103,15 +121,20 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
           workouts.push(buildStrides(base));
           break;
 
-        case 3:
+        case 3: // Thu — second quality session
           if (phase === 'taper') {
-            if (raceDistanceMeters) workouts.push(buildRacePace(base, raceDistanceMeters));
+            if (racePriority === 'A' && raceDistanceMeters) workouts.push(buildRacePace(base, raceDistanceMeters));
             else workouts.push(buildSingleThreshold(base));
+          } else if (family === 'middle' && phase === 'specific') {
+            workouts.push(buildShortReps(base));
           } else if (doubles && tSessions >= 4) {
             workouts.push(buildLt1AM(base));
             workouts.push(buildLt1PM(base));
           } else if (tSessions >= 2) {
-            workouts.push(phase === 'build' ? buildVo2Max(base) : buildSingleThreshold(base));
+            const wantVo2 = (phase === 'build') && (family !== 'marathon');
+            workouts.push(wantVo2 ? buildVo2Max(base) : buildSingleThreshold(base));
+          } else if (sSessions >= 1 && family === 'middle') {
+            workouts.push(buildShortReps(base));
           } else {
             workouts.push(buildHills(base));
           }
@@ -121,14 +144,8 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
           workouts.push(profile.daysPerWeek >= 7 ? buildEasy(base) : buildRest(base));
           break;
 
-        case 5:
-          if (isMarathon && (phase === 'specific' || phase === 'build')) {
-            workouts.push(buildProgressionLong(base));
-          } else if (phase === 'taper') {
-            workouts.push(buildEasy({ ...base, weeklyKm: Math.round(phaseKm * 0.5) }));
-          } else {
-            workouts.push(buildLong(base));
-          }
+        case 5: // Sat — long run, scaled by race family
+          workouts.push(buildSaturdayLongRun({ base, family, phase, phaseKm, weeksToRace }));
           break;
 
         case 6:
@@ -157,10 +174,40 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
   };
 }
 
-function computePhase(weekIndex: number, total: number, raceDate?: Date, weekStart?: Date): TrainingPhase {
+interface LongRunArgs {
+  base: { date: string; weeklyKm: number; daysPerWeek: number; index: number; locale?: Locale };
+  family?: RaceFamily;
+  phase: TrainingPhase;
+  phaseKm: number;
+  weeksToRace: number;
+}
+
+function buildSaturdayLongRun({ base, family, phase, phaseKm, weeksToRace }: LongRunArgs): Workout {
+  if (phase === 'taper') {
+    return buildEasy({ ...base, weeklyKm: Math.round(phaseKm * 0.5) });
+  }
+  if (family === 'marathon' && phase !== 'recovery') {
+    const km = marathonLongRunKm(weeksToRace, phaseKm);
+    const includeRacePace = weeksToRace >= 4 && weeksToRace <= 10;
+    return buildMarathonLongRun(base, km, includeRacePace);
+  }
+  if (family === 'middle' || family === 'short') {
+    const km = midLongRunKm(family, phaseKm);
+    return buildLong({ ...base, weeklyKm: km * (1 / 0.28) });
+  }
+  return buildLong(base);
+}
+
+function computePhase(weekIndex: number, total: number, raceDate?: Date, weekStart?: Date, priority: RacePriority = 'A'): TrainingPhase {
   if (raceDate && weekStart) {
     const daysToRace = (raceDate.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24);
-    if (daysToRace <= 10) return 'taper';
+    if (priority === 'C') {
+      if (daysToRace <= 28) return 'specific';
+      if (daysToRace <= 56) return 'build';
+      return 'base';
+    }
+    if (daysToRace <= 10 && priority === 'A') return 'taper';
+    if (daysToRace <= 7 && priority === 'B') return 'taper';
     if (daysToRace <= 28) return 'specific';
     if (daysToRace <= 56) return 'build';
     return 'base';
