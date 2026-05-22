@@ -1,14 +1,16 @@
 import type { Workout, WorkoutType } from './types';
 import type { Locale } from '@/i18n/config';
 import {
-  HILL_VARIANTS,
-  LT1_AM_VARIANTS,
   LT1_PM_VARIANTS,
-  LT2_VARIANTS,
+  MIXED_VARIANTS,
   PROGRESSIVE_VARIANT,
-  SPEED_VARIANTS,
-  VO2_VARIANTS,
   VOLUME_THRESHOLD_VARIANTS,
+  hillsPoolForLevel,
+  lt1AmPoolForLevel,
+  lt2PoolForLevel,
+  speedPoolForLevel,
+  vo2PoolForLevel,
+  type RunnerLevelHint,
   type SessionVariant,
 } from './variants';
 
@@ -20,6 +22,7 @@ interface BuildArgs {
   weekIndex?: number;
   doubleDay?: 'AM' | 'PM';
   locale?: Locale;
+  level?: RunnerLevelHint;
 }
 
 function pickVariant<T extends SessionVariant>(variants: T[], weekIndex: number | undefined): T {
@@ -109,9 +112,9 @@ export function buildLong({ date, weeklyKm, locale }: BuildArgs): Workout {
   return { id: nextId(date), date, type: 'long', title: c.title, totalDistanceMeters: km * 1000, totalDurationSeconds: km * 320, rpe: 4, purpose: c.purpose, feel: c.feel, guidance: [...c.guidance], steps: [{ distanceMeters: km * 1000, pace: 'long' }] };
 }
 
-export function buildLt1AM({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
+export function buildLt1AM({ date, weeklyKm, weekIndex, locale, level }: BuildArgs): Workout {
   const c = copy(locale).lt1_threshold;
-  const variant = pickVariant(LT1_AM_VARIANTS, weekIndex);
+  const variant = pickVariant(lt1AmPoolForLevel(level ?? 'intermediate'), weekIndex);
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date, '-am'), date, type: 'lt1_threshold',
@@ -141,9 +144,9 @@ export function buildLt1PM({ date, weeklyKm, weekIndex, locale }: BuildArgs): Wo
   };
 }
 
-export function buildSingleThreshold({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
+export function buildSingleThreshold({ date, weeklyKm, weekIndex, locale, level }: BuildArgs): Workout {
   const c = copy(locale).lt2_threshold;
-  const variant = pickVariant(LT2_VARIANTS, weekIndex);
+  const variant = pickVariant(lt2PoolForLevel(level ?? 'intermediate'), weekIndex);
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date), date, type: 'lt2_threshold',
@@ -157,9 +160,9 @@ export function buildSingleThreshold({ date, weeklyKm, weekIndex, locale }: Buil
   };
 }
 
-export function buildVo2Max({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
+export function buildVo2Max({ date, weeklyKm, weekIndex, locale, level }: BuildArgs): Workout {
   const c = copy(locale).vo2max;
-  const variant = pickVariant(VO2_VARIANTS, weekIndex);
+  const variant = pickVariant(vo2PoolForLevel(level ?? 'intermediate'), weekIndex);
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date), date, type: 'vo2max',
@@ -173,9 +176,9 @@ export function buildVo2Max({ date, weeklyKm, weekIndex, locale }: BuildArgs): W
   };
 }
 
-export function buildHills({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
+export function buildHills({ date, weeklyKm, weekIndex, locale, level }: BuildArgs): Workout {
   const c = copy(locale).hills;
-  const variant = pickVariant(HILL_VARIANTS, weekIndex);
+  const variant = pickVariant(hillsPoolForLevel(level ?? 'intermediate'), weekIndex);
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date), date, type: 'hills',
@@ -189,8 +192,8 @@ export function buildHills({ date, weeklyKm, weekIndex, locale }: BuildArgs): Wo
   };
 }
 
-export function buildSpeed({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
-  const variant = pickVariant(SPEED_VARIANTS, weekIndex);
+export function buildSpeed({ date, weeklyKm, weekIndex, locale, level }: BuildArgs): Workout {
+  const variant = pickVariant(speedPoolForLevel(level ?? 'intermediate'), weekIndex);
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date), date, type: 'vo2max',
@@ -325,6 +328,21 @@ export function buildMarathonLongRun({ date, weeklyKm, locale }: BuildArgs, leng
     feel: "Confortable les 65 premiers %.",
     guidance: [`${easyKm} km faciles puis ${racePaceKm} km à allure marathon`, "Idéale 4 à 6 semaines avant le marathon"],
     steps: [{ distanceMeters: easyKm * 1000, pace: 'long', note: 'Partie facile' }, { distanceMeters: racePaceKm * 1000, pace: 'marathon', note: 'Bloc allure marathon' }],
+  };
+}
+
+export function buildMixed({ date, weeklyKm, weekIndex, locale }: BuildArgs): Workout {
+  const variant = pickVariant(MIXED_VARIANTS, weekIndex);
+  const work = variant.build(weeklyKm);
+  return {
+    id: nextId(date), date, type: 'lt2_threshold',
+    title: `Séance combo — ${variant.label}`,
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 4.5) * 1000),
+    totalDurationSeconds: 70 * 60, rpe: 7.5,
+    purpose: "Séance mixte — combine deux stimuli physiologiques pour casser la routine et travailler plusieurs systèmes. " + variant.structure + '.',
+    feel: variant.feelHint,
+    guidance: variant.approachTips,
+    steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
   };
 }
 
