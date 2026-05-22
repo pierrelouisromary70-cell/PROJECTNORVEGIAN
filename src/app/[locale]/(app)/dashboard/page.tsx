@@ -5,7 +5,11 @@ import { AlertTriangle, HeartHandshake, Coffee } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { generatePlan } from '@/lib/training/plan-generator';
 import { generateComebackPlan } from '@/lib/training/comeback-plan';
-import { POST_BREAK_RAMP_WEEKS, postBreakWeeklyKmCap } from '@/lib/training/norwegian';
+import {
+  comebackProtocolDays,
+  postBreakRampWeeks,
+  postBreakWeeklyKmCap,
+} from '@/lib/training/norwegian';
 import type { RunnerProfile, TrainingBlock, Workout } from '@/lib/training/types';
 import { WorkoutCard } from '@/components/WorkoutCard';
 import { RacePredictor } from '@/components/RacePredictor';
@@ -32,6 +36,76 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   if (!profile || !profile.onboarded || !profile.vdot) redirect(`/${locale}/onboarding`);
 
   const trialDaysLeft = sub?.trial_end ? Math.max(0, Math.ceil((new Date(sub.trial_end).getTime() - Date.now()) / 86400000)) : 0;
+
+  // === COMEBACK STATE: protocol length scales with how long the injury lasted ===
+  // (Checked before INJURY so that a runner who clicked "start comeback" enters
+  // the protocol — `injured_since` is preserved as the start-of-injury marker.)
+  if (profile.comeback_started_on) {
+    const comebackStart = new Date(profile.comeback_started_on);
+    const today = new Date();
+    const daysSinceStart = Math.floor((today.getTime() - comebackStart.getTime()) / 86400000);
+
+    const injuryDurationDays = profile.injured_since
+      ? Math.max(0, Math.floor((comebackStart.getTime() - new Date(profile.injured_since).getTime()) / 86400000))
+      : 14;
+    const totalDays = comebackProtocolDays(injuryDurationDays);
+
+    if (daysSinceStart >= totalDays) {
+      // Protocol complete — clear both flags and drop into post-comeback ramp.
+      await supabase.from('profiles').update({
+        comeback_started_on: null,
+        injured_since: null,
+      }).eq('id', user.id);
+      redirect(`/${locale}/dashboard`);
+    }
+
+    const block = generateComebackPlan({ comebackStartDate: comebackStart, today, totalDays });
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const todayWorkouts = block.weeks.flatMap((w) => w.workouts).filter((w) => w.date === todayStr);
+    const upcoming = block.weeks.flatMap((w) => w.workouts).filter((w) => w.date > todayStr).slice(0, 4);
+
+    return (
+      <div className="space-y-6">
+        {sub?.status === 'trialing' && <TrialBanner days={trialDaysLeft} locale={locale} />}
+
+        <div className="card-dark relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-aurora-500/20 blur-3xl" />
+          <div className="relative flex items-start gap-4">
+            <HeartHandshake className="h-8 w-8 text-aurora-400 shrink-0 mt-1" />
+            <div>
+              <h2 className="font-display text-2xl">Protocole de reprise — jour {daysSinceStart + 1} / {totalDays}</h2>
+              <p className="text-ink-300 mt-2 text-sm">
+                Reprise progressive sur {totalDays} jours (calibrée sur {injuryDurationDays} j d&apos;arrêt). À la fin de cette période, le plan normal reprendra automatiquement.
+              </p>
+              <div className="mt-4">
+                <ResumeNormalButton label="Annuler le protocole — retour au plan normal" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <header>
+          <p className="text-sm text-ink-600">{format(today, 'EEEE dd MMMM')}</p>
+          <h1 className="display text-4xl md:text-5xl text-ink-950">Aujourd&apos;hui</h1>
+        </header>
+
+        {todayWorkouts.length === 0 ? (
+          <div className="card"><p className="text-ink-700">Pas de séance prévue aujourd&apos;hui — récupérez.</p></div>
+        ) : (
+          <div className="space-y-4">
+            {todayWorkouts.map((w) => <WorkoutCard key={w.id} workout={w} vdot={Number(profile.vdot)} />)}
+          </div>
+        )}
+
+        <section>
+          <h2 className="text-lg font-semibold text-ink-900 mb-3">Jours suivants</h2>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {upcoming.map((w) => <WorkoutCard key={w.id} workout={w} vdot={Number(profile.vdot)} compact />)}
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   // === INJURY STATE: plan paused ===
   if (profile.injured_since) {
@@ -68,6 +142,12 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
 
   // === PLANNED BREAK STATE: voluntary off-period (post-race, holidays, etc.) ===
   if (profile.break_started_on && !profile.break_ended_on) {
+    const breakStartDate = new Date(profile.break_started_on);
+    const breakDaysSoFar = Math.max(1, Math.floor((Date.now() - breakStartDate.getTime()) / 86400000));
+    const projectedRampWeeks = postBreakRampWeeks(breakDaysSoFar);
+    const preBreakKm = profile.pre_break_weekly_km ? Number(profile.pre_break_weekly_km) : null;
+    const projectedStartKm = preBreakKm ? postBreakWeeklyKmCap(preBreakKm, 0, breakDaysSoFar) : null;
+
     return (
       <div className="space-y-6">
         {sub?.status === 'trialing' && <TrialBanner days={trialDaysLeft} locale={locale} />}
@@ -79,7 +159,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
           <div className="flex items-start gap-4">
             <Coffee className="h-8 w-8 text-sky-600 shrink-0 mt-1" />
             <div>
-              <h2 className="font-semibold text-ink-900 text-lg">En coupure depuis le {profile.break_started_on}</h2>
+              <h2 className="font-semibold text-ink-900 text-lg">En coupure depuis le {profile.break_started_on} ({breakDaysSoFar} j)</h2>
               <p className="text-ink-700 mt-2">
                 Votre plan est volontairement mis en pause. Coupure post-course, vacances, vie pro
                 intense — toutes les bonnes raisons de souffler. Pas de culpabilité : la coupure fait
@@ -88,10 +168,8 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
               <ul className="mt-4 space-y-1.5 text-sm text-ink-700">
                 <li>• Vous pouvez courir quand vous voulez, sans plan ni structure</li>
                 <li>• Activité croisée bienvenue (vélo, natation, randonnée)</li>
-                <li>• À la reprise, le plan augmentera progressivement sur {POST_BREAK_RAMP_WEEKS} semaines</li>
-                {profile.pre_break_weekly_km && (
-                  <li>• Vous reprendrez à ~{Math.round(Number(profile.pre_break_weekly_km) * 0.5)} km/sem (50 % de votre volume habituel), pour remonter à {Math.round(Number(profile.pre_break_weekly_km))} km/sem en 4 semaines</li>
-                )}
+                <li>• Si vous reprenez maintenant : rampe de {projectedRampWeeks} semaines{projectedStartKm && preBreakKm ? `, démarrage à ~${projectedStartKm} km/sem (${Math.round(100 * projectedStartKm / preBreakKm)} % de votre volume habituel)` : ''}</li>
+                <li>• Plus la coupure se prolonge, plus la rampe sera longue (2 sem → 4 → 6 → 8)</li>
               </ul>
               <div className="mt-6">
                 <EndBreakButton />
@@ -103,79 +181,27 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
     );
   }
 
-  // === COMEBACK STATE: 14-day return-to-run protocol ===
-  if (profile.comeback_started_on) {
-    const comebackStart = new Date(profile.comeback_started_on);
-    const today = new Date();
-    const daysSinceStart = Math.floor((today.getTime() - comebackStart.getTime()) / 86400000);
-
-    if (daysSinceStart >= 14) {
-      await supabase.from('profiles').update({ comeback_started_on: null }).eq('id', user.id);
-      redirect(`/${locale}/dashboard`);
-    }
-
-    const block = generateComebackPlan({ comebackStartDate: comebackStart, today });
-    const todayStr = format(today, 'yyyy-MM-dd');
-    const todayWorkouts = block.weeks.flatMap((w) => w.workouts).filter((w) => w.date === todayStr);
-    const upcoming = block.weeks.flatMap((w) => w.workouts).filter((w) => w.date > todayStr).slice(0, 4);
-
-    return (
-      <div className="space-y-6">
-        {sub?.status === 'trialing' && <TrialBanner days={trialDaysLeft} locale={locale} />}
-
-        <div className="card-dark relative overflow-hidden">
-          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-aurora-500/20 blur-3xl" />
-          <div className="relative flex items-start gap-4">
-            <HeartHandshake className="h-8 w-8 text-aurora-400 shrink-0 mt-1" />
-            <div>
-              <h2 className="font-display text-2xl">Protocole de reprise — jour {daysSinceStart + 1} / 14</h2>
-              <p className="text-ink-300 mt-2 text-sm">
-                Reprise progressive sur 14 jours. À la fin de cette période, le plan normal reprendra
-                automatiquement.
-              </p>
-              <div className="mt-4">
-                <ResumeNormalButton label="Annuler le protocole — retour au plan normal" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <header>
-          <p className="text-sm text-ink-600">{format(today, 'EEEE dd MMMM')}</p>
-          <h1 className="display text-4xl md:text-5xl text-ink-950">Aujourd&apos;hui</h1>
-        </header>
-
-        {todayWorkouts.length === 0 ? (
-          <div className="card"><p className="text-ink-700">Pas de séance prévue aujourd&apos;hui — récupérez.</p></div>
-        ) : (
-          <div className="space-y-4">
-            {todayWorkouts.map((w) => <WorkoutCard key={w.id} workout={w} vdot={Number(profile.vdot)} />)}
-          </div>
-        )}
-
-        <section>
-          <h2 className="text-lg font-semibold text-ink-900 mb-3">Jours suivants</h2>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {upcoming.map((w) => <WorkoutCard key={w.id} workout={w} vdot={Number(profile.vdot)} compact />)}
-          </div>
-        </section>
-      </div>
-    );
-  }
-
   // === POST-BREAK RAMP-UP DETECTION ===
-  // If a break ended recently, cap the current weekly km on a 4-week ramp
-  // so we don't throw the runner back at 100 % from day one.
-  let postBreakInfo: { weeksSinceEnd: number; cappedKm: number; preBreakKm: number } | null = null;
+  // Cap weekly volume on a ramp whose length depends on how long the break was
+  // (a 1-week vacation needs 2 weeks of ramp; a 2-month off-season needs 8).
+  let postBreakInfo: { weeksSinceEnd: number; rampWeeks: number; cappedKm: number; preBreakKm: number; breakDays: number } | null = null;
   if (profile.break_ended_on && profile.pre_break_weekly_km) {
+    const breakStart = profile.break_started_on ? new Date(profile.break_started_on) : null;
+    const breakEnd = new Date(profile.break_ended_on);
+    const breakDays = breakStart
+      ? Math.max(1, Math.floor((breakEnd.getTime() - breakStart.getTime()) / 86400000))
+      : 14;
     const weeksSinceEnd = Math.floor(
-      (Date.now() - new Date(profile.break_ended_on).getTime()) / (7 * 86400000),
+      (Date.now() - breakEnd.getTime()) / (7 * 86400000),
     );
-    if (weeksSinceEnd < POST_BREAK_RAMP_WEEKS) {
+    const rampWeeks = postBreakRampWeeks(breakDays);
+    if (weeksSinceEnd < rampWeeks) {
       postBreakInfo = {
         weeksSinceEnd,
+        rampWeeks,
+        breakDays,
         preBreakKm: Number(profile.pre_break_weekly_km),
-        cappedKm: postBreakWeeklyKmCap(Number(profile.pre_break_weekly_km), weeksSinceEnd),
+        cappedKm: postBreakWeeklyKmCap(Number(profile.pre_break_weekly_km), weeksSinceEnd, breakDays),
       };
     } else {
       // Ramp complete — clear the flags so the runner returns to normal.
@@ -235,10 +261,10 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
             <Coffee className="h-6 w-6 text-sky-600 shrink-0 mt-0.5" />
             <div className="text-sm">
               <p className="font-semibold text-ink-900">
-                Reprise après coupure — semaine {postBreakInfo.weeksSinceEnd + 1} / {POST_BREAK_RAMP_WEEKS}
+                Reprise après coupure — semaine {postBreakInfo.weeksSinceEnd + 1} / {postBreakInfo.rampWeeks}
               </p>
               <p className="text-ink-700 mt-1">
-                Volume plafonné à {postBreakInfo.cappedKm} km/sem ({Math.round(100 * postBreakInfo.cappedKm / postBreakInfo.preBreakKm)} % de votre volume d&apos;avant coupure). Plein volume rétabli dans {POST_BREAK_RAMP_WEEKS - postBreakInfo.weeksSinceEnd} sem.
+                Coupure de {postBreakInfo.breakDays} j → rampe sur {postBreakInfo.rampWeeks} semaines. Volume plafonné à {postBreakInfo.cappedKm} km/sem ({Math.round(100 * postBreakInfo.cappedKm / postBreakInfo.preBreakKm)} % de votre volume d&apos;avant coupure). Plein volume rétabli dans {postBreakInfo.rampWeeks - postBreakInfo.weeksSinceEnd} sem.
               </p>
             </div>
           </div>
