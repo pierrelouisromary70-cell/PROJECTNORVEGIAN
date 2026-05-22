@@ -1,8 +1,11 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-export function createClient() {
-  const cookieStore = cookies();
+// Next 15: cookies() is now async. We make createClient async too rather
+// than reaching for the UnsafeUnwrappedCookies escape hatch (which is
+// scheduled for removal). All call sites must `await createClient()`.
+export async function createClient() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
