@@ -26,12 +26,16 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
 
-  const [{ data: profile }, { data: sub }, { data: blockRow }, { data: primaryRace }] = await Promise.all([
+  const [{ data: profile }, { data: sub }, { data: blockRow }, { data: primaryRace }, { data: logs }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
     supabase.from('training_blocks').select('*').eq('user_id', user.id).order('start_date', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('target_races').select('*').eq('user_id', user.id).eq('priority', 'A').gte('race_date', new Date().toISOString().slice(0, 10)).order('race_date', { ascending: true }).limit(1).maybeSingle(),
+    supabase.from('workout_logs').select('workout_id,status').eq('user_id', user.id).gte('workout_date', new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10)),
   ]);
+  const logByWorkoutId = new Map<string, 'done' | 'skipped' | 'partial' | 'replaced'>(
+    (logs ?? []).map((l) => [l.workout_id, l.status as 'done' | 'skipped' | 'partial' | 'replaced']),
+  );
 
   if (!profile || !profile.onboarded || !profile.vdot) redirect(`/${locale}/onboarding`);
 
@@ -284,12 +288,30 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
         <div className="card"><p className="text-ink-700">Pas de séance prévue aujourd&apos;hui.</p></div>
       ) : (
         <div className="space-y-4">
-          {todayWorkouts.map((w) => <WorkoutCard key={w.id} workout={w} vdot={Number(profile.vdot)} />)}
+          {todayWorkouts.map((w) => (
+            <WorkoutCard
+              key={w.id}
+              workout={w}
+              vdot={Number(profile.vdot)}
+              withLogControls
+              logStatus={logByWorkoutId.get(w.id)}
+              runnerLocale={locale}
+            />
+          ))}
         </div>
       )}
 
       <section>
-        <h2 className="text-lg font-semibold text-ink-900 mb-3">À venir</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-ink-900">À venir</h2>
+          <a
+            href="/api/calendar/ics"
+            download
+            className="text-sm text-ink-600 hover:text-ink-900 underline"
+          >
+            Exporter en calendrier (.ics)
+          </a>
+        </div>
         <div className="grid sm:grid-cols-2 gap-3">
           {upcoming.map((w) => <WorkoutCard key={w.id} workout={w} vdot={Number(profile.vdot)} compact />)}
         </div>
