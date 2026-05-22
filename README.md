@@ -6,7 +6,7 @@ Application de coaching course à pied basée sur la méthode norvégienne (Inge
 - **VDOT (Jack Daniels)** pour calibrer toutes les allures
 - **Adaptation continue** : fatigue, douleur, contraintes de temps, cycle menstruel
 - **Plans 4 semaines** régénérés en fonction de votre course objectif
-- **30 jours offerts**, puis 5 € / mois (Stripe)
+- **14 jours offerts**, puis 15 € / mois ou 120 € / an (Stripe)
 
 ## Stack
 
@@ -54,10 +54,11 @@ Les allures LT1 / LT2 sont décalibrées de la T classique de Daniels pour reste
    - Remplir `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 
 3. **Stripe**
-   - Créer un produit "Nordic Run" → prix 5 € / mois récurrent
-   - Remplir `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRICE_ID`
+   - Créer un produit "Nordic Run" avec deux prix récurrents : **15 € / mois** et **120 € / an**
+   - Remplir `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRICE_ID_MONTHLY`, `STRIPE_PRICE_ID_ANNUAL`
    - Configurer un webhook `/api/stripe/webhook` (events: `customer.subscription.*`, `checkout.session.completed`)
    - Mettre la clé dans `STRIPE_WEBHOOK_SECRET`
+   - L'essai gratuit de **14 jours** est activé automatiquement par le trigger SQL `handle_new_user` lors de l'inscription.
 
 4. **Démarrer**
    ```bash
@@ -67,7 +68,7 @@ Les allures LT1 / LT2 sont décalibrées de la T classique de Daniels pour reste
 
 ## Parcours utilisateur
 
-1. Inscription → essai gratuit 30 jours activé automatiquement (trigger SQL).
+1. Inscription → essai gratuit 14 jours activé automatiquement (trigger SQL).
 2. Onboarding 6 étapes : sexe, expérience, volume actuel, objectif (progresser / performer), perf récente → VDOT calculé, contraintes de temps, opt-in cycle menstruel (si femme).
 3. Premier accès au dashboard → génération d'un bloc de 4 semaines norvégien.
 4. Chaque jour : ressenti (fatigue 1–5, douleur 0–3, temps dispo) → la séance du jour s'adapte.
