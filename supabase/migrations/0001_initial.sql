@@ -18,6 +18,8 @@ create table if not exists public.profiles (
   onboarded boolean not null default false,
   track_cycle boolean not null default false,
   time_constraints_min int,
+  injured_since date,
+  comeback_started_on date,
   locale text not null default 'fr',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
