@@ -1,16 +1,26 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { ProfileForm } from './ProfileForm';
+import { StravaSection } from './StravaSection';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ProfilePage({ params: { locale } }: { params: { locale: string } }) {
+export default async function ProfilePage({
+  params: { locale },
+  searchParams,
+}: {
+  params: { locale: string };
+  searchParams?: { strava?: string };
+}) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
-  const { data: sub } = await supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle();
+  const [{ data: profile }, { data: sub }, { data: strava }] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+    supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
+    supabase.from('strava_connections').select('user_id, created_at').eq('user_id', user.id).maybeSingle(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -22,6 +32,11 @@ export default async function ProfilePage({ params: { locale } }: { params: { lo
           <p className="text-sm text-fjord-700">Essai jusqu'au {new Date(sub.trial_end).toLocaleDateString()}</p>
         )}
       </div>
+      <StravaSection
+        connected={!!strava}
+        connectedAt={strava?.created_at ?? null}
+        statusFlash={searchParams?.strava}
+      />
       {profile && <ProfileForm profile={profile} locale={locale} />}
       {profile?.sex === 'female' && (
         <Link href={`/${locale}/cycle`} className="card block hover:bg-fjord-50">
