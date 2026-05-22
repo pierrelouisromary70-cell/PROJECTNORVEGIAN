@@ -7,6 +7,16 @@ import { formatDistance, formatDuration } from '@/lib/utils';
 import { Flame, Gauge, MapPin, Play } from 'lucide-react';
 import { WorkoutLogControls, type WorkoutLogStatus } from './WorkoutLogControls';
 
+// Map RPE (1-10) → tailwind border + chip tints. RPE is the most honest one-glance
+// signal of how hard a session will feel; coloring the rail lets the runner scan
+// a week of cards and instantly read the polarisation.
+function intensityTint(rpe: number): { rail: string; chip: string; dot: string } {
+  if (rpe <= 0) return { rail: 'border-l-ink-200', chip: 'bg-ink-100 text-ink-700', dot: 'bg-ink-400' };
+  if (rpe <= 3) return { rail: 'border-l-aurora-500', chip: 'bg-aurora-50 text-aurora-800', dot: 'bg-aurora-500' };
+  if (rpe <= 6) return { rail: 'border-l-amber-400', chip: 'bg-amber-50 text-amber-800', dot: 'bg-amber-400' };
+  return { rail: 'border-l-rose-500', chip: 'bg-rose-50 text-rose-800', dot: 'bg-rose-500' };
+}
+
 export interface WorkoutCardProps {
   workout: Workout;
   vdot: number;
@@ -22,24 +32,26 @@ export interface WorkoutCardProps {
 export function WorkoutCard({ workout, vdot, compact = false, withLogControls = false, logStatus, runnerLocale }: WorkoutCardProps) {
   const t = useTranslations('workout');
   const zones = buildPaceZones(vdot);
+  const tint = intensityTint(workout.rpe);
 
   if (compact) {
     return (
-      <div className="card flex items-start justify-between gap-4">
+      <div className={`card flex items-start justify-between gap-4 border-l-4 ${tint.rail}`}>
         <div>
           <div className="text-xs text-fjord-600 uppercase tracking-wide">{workout.date}{workout.amPm ? ` · ${workout.amPm}` : ''}</div>
           <div className="font-semibold text-fjord-900">{workout.title}</div>
           <div className="text-sm text-fjord-700">{formatDistance(workout.totalDistanceMeters)} · {formatDuration(workout.totalDurationSeconds)}</div>
         </div>
-        <span className="chip"><Gauge className="h-3 w-3" /> RPE {workout.rpe || '—'}</span>
+        <span className={`chip ${tint.chip}`}><Gauge className="h-3 w-3" /> RPE {workout.rpe || '—'}</span>
       </div>
     );
   }
 
   return (
-    <article className="card space-y-5">
+    <article className={`card space-y-5 border-l-4 ${tint.rail}`}>
       <header>
         <div className="flex items-center gap-2 text-xs text-fjord-600 uppercase tracking-wide">
+          <span className={`h-1.5 w-1.5 rounded-full ${tint.dot}`} />
           <span>{workout.date}</span>
           {workout.amPm && <span className="chip">{workout.amPm}</span>}
         </div>
@@ -47,7 +59,7 @@ export function WorkoutCard({ workout, vdot, compact = false, withLogControls = 
         <div className="flex flex-wrap gap-3 mt-3 text-sm">
           <span className="chip"><MapPin className="h-3 w-3" /> {formatDistance(workout.totalDistanceMeters)}</span>
           <span className="chip">{formatDuration(workout.totalDurationSeconds)}</span>
-          <span className="chip"><Flame className="h-3 w-3" /> RPE {workout.rpe}/10</span>
+          <span className={`chip ${tint.chip}`}><Flame className="h-3 w-3" /> RPE {workout.rpe}/10</span>
         </div>
       </header>
 

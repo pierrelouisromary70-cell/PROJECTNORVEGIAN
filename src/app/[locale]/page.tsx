@@ -95,12 +95,13 @@ function Stats({ t }: { t: ReturnType<typeof useTranslations<'landing'>> }) {
     { k: t('stat3k'), v: t('stat3v') },
   ];
   return (
-    <section className="border-y border-ink-100 bg-ink-50">
-      <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-        {items.map((it) => (
-          <div key={it.k}>
-            <div className="font-display text-4xl md:text-5xl font-bold text-ink-950">{it.k}</div>
-            <div className="text-sm text-ink-600 mt-2">{it.v}</div>
+    <section className="border-y border-aurora-100 bg-gradient-to-br from-aurora-50 via-white to-aurora-50">
+      <div className="max-w-6xl mx-auto px-6 py-14 grid grid-cols-1 md:grid-cols-3 gap-10">
+        {items.map((it, i) => (
+          <div key={it.k} className="relative">
+            {i > 0 && <span aria-hidden className="hidden md:block absolute -left-5 top-2 bottom-2 w-px bg-aurora-200" />}
+            <div className="font-display text-4xl md:text-5xl font-bold text-aurora-800 tracking-tightest">{it.k}</div>
+            <div className="text-sm text-ink-700 mt-3 leading-relaxed max-w-xs">{it.v}</div>
           </div>
         ))}
       </div>
@@ -203,8 +204,14 @@ function Pricing({ locale, t }: { locale: string; t: ReturnType<typeof useTransl
           </Link>
         </div>
 
-        <div className="card-dark relative overflow-hidden">
-          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-aurora-500/20 blur-3xl" />
+        <div className="card-dark relative overflow-hidden ring-2 ring-aurora-500/40 shadow-[0_0_60px_-12px_rgba(16,185,129,0.4)]">
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+            <span className="inline-block rounded-full bg-aurora-500 text-ink-950 text-[11px] font-bold uppercase tracking-wider px-3 py-1 shadow-md">
+              Le plus choisi
+            </span>
+          </div>
+          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-aurora-500/30 blur-3xl" />
+          <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-aurora-700/20 blur-3xl" />
           <div className="relative">
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold text-aurora-400 uppercase tracking-wider">{t('priceAnnual')}</div>

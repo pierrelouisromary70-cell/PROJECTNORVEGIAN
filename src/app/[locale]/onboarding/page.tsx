@@ -87,11 +87,21 @@ export default function OnboardingPage({ params: { locale } }: { params: { local
   }
 
   return (
-    <main className="min-h-screen grid place-items-center px-6 py-10">
+    <main className="min-h-screen grid place-items-center px-6 py-10 bg-[radial-gradient(50%_50%_at_50%_0%,theme(colors.aurora.50)_0%,transparent_70%)]">
       <div className="card w-full max-w-xl">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-3">
           <h1 className="text-2xl font-bold text-ink-950">{t('title')}</h1>
-          <span className="chip">{step} / 6</span>
+          <span className="text-xs font-medium text-ink-500">Étape {step} / 6</span>
+        </div>
+        <div className="flex gap-1.5 mb-6" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={6}>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
+                step >= i ? 'bg-aurora-500' : 'bg-ink-100'
+              }`}
+            />
+          ))}
         </div>
 
         {step === 1 && (
