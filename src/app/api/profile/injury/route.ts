@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server';
  * Toggle injury state on the user profile.
  *
  * POST { action: 'declare' }                 → marks injured_since = today, pauses plan
- * POST { action: 'start_comeback' }          → starts 14-day return-to-run protocol
+ * POST { action: 'start_comeback' }          → starts return-to-run protocol
+ *                                              (length scales with injury duration)
  * POST { action: 'resume_normal' }           → clears both flags, back to normal
  */
 export async function POST(req: Request) {
@@ -31,8 +32,9 @@ export async function POST(req: Request) {
   }
 
   if (action === 'start_comeback') {
+    // Keep `injured_since` so the dashboard can compute the injury duration
+    // and scale the comeback protocol length (7 / 14 / 21 / 28 days).
     await supabase.from('profiles').update({
-      injured_since: null,
       comeback_started_on: today,
       updated_at: new Date().toISOString(),
     }).eq('id', user.id);

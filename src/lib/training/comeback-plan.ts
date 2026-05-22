@@ -1,69 +1,86 @@
-// Comeback plan generator — 14-day return-to-run protocol.
+// Comeback plan generator — return-to-run protocol.
 //
-// When a runner declares "I'm back from injury", we generate a 14-day plan
-// instead of the normal Norwegian block. The protocol is documented in
+// When a runner declares "I'm back from injury", we generate a comeback block
+// instead of the normal Norwegian block. Length scales with how long the
+// injury lasted (7/14/21/28 days). Protocol shape: see
 // `norwegian.ts:comebackPhase`.
 
 import { addDays, format } from 'date-fns';
 import type { Locale } from '@/i18n/config';
-import { comebackPhase, type ComebackContext } from './norwegian';
+import {
+  comebackPhase,
+  comebackSchedule,
+  type ComebackContext,
+  type ComebackSchedule,
+} from './norwegian';
 import type { TrainingBlock, TrainingWeek, Workout } from './types';
 
 export interface ComebackPlanArgs {
   comebackStartDate: Date;
   today: Date;
+  /** Total protocol length in days (7, 14, 21, or 28). Defaults to 14. */
+  totalDays?: number;
   locale?: Locale;
 }
 
 /**
- * Generate a 14-day comeback block. Each day gets one prescribed session:
- * walk/run, easy, easy+strides, or easy+light sub-threshold.
+ * Generate a comeback block of the requested length (default 14 days).
+ * Each day gets one prescribed session: rest, walk/run, easy, easy+strides,
+ * or easy+light sub-threshold.
  */
 export function generateComebackPlan(args: ComebackPlanArgs): TrainingBlock {
   const { comebackStartDate } = args;
+  const totalDays = args.totalDays ?? 14;
+  const schedule = comebackSchedule(totalDays);
   const workouts: Workout[] = [];
 
-  for (let day = 0; day < 14; day++) {
+  for (let day = 0; day < schedule.totalDays; day++) {
     const date = format(addDays(comebackStartDate, day), 'yyyy-MM-dd');
     const ctx: ComebackContext = { startDate: comebackStartDate, today: addDays(comebackStartDate, day) };
-    const phase = comebackPhase(ctx);
+    const phase = comebackPhase(ctx, schedule.totalDays);
     if (!phase) continue;
-    workouts.push(buildComebackDay(date, day, phase));
+    workouts.push(buildComebackDay(date, day, phase, schedule));
   }
 
   const startStr = format(comebackStartDate, 'yyyy-MM-dd');
-  const endStr = format(addDays(comebackStartDate, 13), 'yyyy-MM-dd');
+  const endStr = format(addDays(comebackStartDate, schedule.totalDays - 1), 'yyyy-MM-dd');
 
-  const week1: TrainingWeek = {
-    weekNumber: 1,
-    startDate: startStr,
-    totalKm: workouts.slice(0, 7).reduce((s, w) => s + w.totalDistanceMeters / 1000, 0),
-    phase: 'recovery',
-    workouts: workouts.slice(0, 7),
-    notes: 'Semaine 1 du retour à la course. Patience maximale.',
-  };
-  const week2: TrainingWeek = {
-    weekNumber: 2,
-    startDate: format(addDays(comebackStartDate, 7), 'yyyy-MM-dd'),
-    totalKm: workouts.slice(7).reduce((s, w) => s + w.totalDistanceMeters / 1000, 0),
-    phase: 'recovery',
-    workouts: workouts.slice(7),
-    notes: 'Semaine 2 du retour à la course. Strides puis première séance légère au sous-seuil.',
-  };
+  const weeks: TrainingWeek[] = [];
+  const weekCount = Math.ceil(schedule.totalDays / 7);
+  for (let w = 0; w < weekCount; w++) {
+    const slice = workouts.slice(w * 7, (w + 1) * 7);
+    weeks.push({
+      weekNumber: w + 1,
+      startDate: format(addDays(comebackStartDate, w * 7), 'yyyy-MM-dd'),
+      totalKm: slice.reduce((s, x) => s + x.totalDistanceMeters / 1000, 0),
+      phase: 'recovery',
+      workouts: slice,
+      notes: comebackWeekNotes(w, weekCount),
+    });
+  }
 
   return {
     id: `comeback-${startStr}`,
     startDate: startStr,
     endDate: endStr,
-    weeks: [week1, week2],
+    weeks,
     vdotAtStart: 0,
   };
 }
 
-function buildComebackDay(date: string, dayIndex: number, phase: ReturnType<typeof comebackPhase>): Workout {
-  if (!phase) throw new Error('Invalid phase');
+function comebackWeekNotes(weekIndex: number, total: number): string {
+  if (weekIndex === 0) return 'Semaine 1 — patience maximale. Aucune intensité.';
+  if (weekIndex === total - 1) return 'Dernière semaine — strides puis première séance légère au sous-seuil.';
+  return `Semaine ${weekIndex + 1} — progression imperceptible du volume, toujours sans qualité.`;
+}
 
-  if (dayIndex === 3 || dayIndex === 6 || dayIndex === 10) {
+function buildComebackDay(
+  date: string,
+  dayIndex: number,
+  phase: NonNullable<ReturnType<typeof comebackPhase>>,
+  schedule: ComebackSchedule,
+): Workout {
+  if (schedule.restDays.includes(dayIndex)) {
     return {
       id: `comeback-${date}-rest`,
       date,
@@ -79,15 +96,18 @@ function buildComebackDay(date: string, dayIndex: number, phase: ReturnType<type
     };
   }
 
+  const dayLabel = `J${dayIndex + 1}/${schedule.totalDays}`;
+  const remainingLine = `${phase.daysRemaining} jours avant retour au plan normal`;
+
   switch (phase.index) {
     case 1:
       return {
         id: `comeback-${date}-walkrun`, date, type: 'easy',
-        title: `Reprise J${dayIndex + 1}/14 — marche/course`,
+        title: `Reprise ${dayLabel} — marche/course`,
         totalDistanceMeters: 4000, totalDurationSeconds: 25 * 60, rpe: 2,
         purpose: phase.description,
         feel: 'Très facile. Aucune sensation d\'effort. Si vous transpirez beaucoup, vous allez trop vite.',
-        guidance: ['Alternance : 2 min course / 1 min marche × 8 cycles', 'Allure très facile pendant les phases de course', 'Pas plus de 25-30 min total', phase.daysRemaining + ' jours avant retour au plan normal'],
+        guidance: ['Alternance : 2 min course / 1 min marche × 8 cycles', 'Allure très facile pendant les phases de course', 'Pas plus de 25-30 min total', remainingLine],
         steps: [
           { distanceMeters: 0, durationSeconds: 5 * 60, pace: 'easy', note: 'Marche d\'échauffement' },
           { reps: 8, durationSeconds: 120, pace: 'easy', recoverySeconds: 60, note: 'Alterner course (2 min) / marche (1 min)' },
@@ -98,22 +118,22 @@ function buildComebackDay(date: string, dayIndex: number, phase: ReturnType<type
     case 2:
       return {
         id: `comeback-${date}-easy`, date, type: 'easy',
-        title: `Reprise J${dayIndex + 1}/14 — footing facile`,
+        title: `Reprise ${dayLabel} — footing facile`,
         totalDistanceMeters: 6000, totalDurationSeconds: 35 * 60, rpe: 3,
         purpose: phase.description,
         feel: 'Facile. Vous pouvez tenir une conversation complète.',
-        guidance: ['30 à 40 min en footing facile, sans aucune accélération', 'Privilégier terrain plat et souple (sentier, piste)', 'Aucune séance de qualité cette semaine', phase.daysRemaining + ' jours avant retour au plan normal'],
+        guidance: ['30 à 40 min en footing facile, sans aucune accélération', 'Privilégier terrain plat et souple (sentier, piste)', 'Aucune séance de qualité cette semaine', remainingLine],
         steps: [{ distanceMeters: 6000, pace: 'easy', durationSeconds: 35 * 60 }],
       };
 
     case 3:
       return {
         id: `comeback-${date}-strides`, date, type: 'strides',
-        title: `Reprise J${dayIndex + 1}/14 — footing + 4 strides`,
+        title: `Reprise ${dayLabel} — footing + 4 strides`,
         totalDistanceMeters: 7000, totalDurationSeconds: 42 * 60, rpe: 4,
         purpose: phase.description,
         feel: 'Facile sur le footing, vif et contrôlé sur les strides. Pas de douleur.',
-        guidance: ['40 min de footing facile', 'Puis 4 strides de 100 m à allure rapide mais contrôlée', 'Récupération marche entre chaque stride', phase.daysRemaining + ' jours avant retour au plan normal'],
+        guidance: ['40 min de footing facile', 'Puis 4 strides de 100 m à allure rapide mais contrôlée', 'Récupération marche entre chaque stride', remainingLine],
         steps: [
           { distanceMeters: 6500, pace: 'easy', note: 'Footing facile' },
           { reps: 4, distanceMeters: 100, pace: 'repetition', recoverySeconds: 60, note: 'Strides contrôlées' },
@@ -121,15 +141,14 @@ function buildComebackDay(date: string, dayIndex: number, phase: ReturnType<type
       };
 
     case 4: {
-      const offset = dayIndex - 10;
-      if (offset === 2) {
+      if (dayIndex === schedule.lt1DayIndex) {
         return {
           id: `comeback-${date}-lt1`, date, type: 'lt1_threshold',
-          title: `Reprise J${dayIndex + 1}/14 — première séance LT1 (5×600 m)`,
+          title: `Reprise ${dayLabel} — première séance LT1 (5×600 m)`,
           totalDistanceMeters: 7000, totalDurationSeconds: 50 * 60, rpe: 6,
           purpose: phase.description,
           feel: 'Effort contrôlé sur les 600 m, vous pouvez parler par phrases courtes. Rester en sous-seuil bas.',
-          guidance: ["Échauffement 15 min easy + 4 strides", "5×600 m à allure sous-seuil BAS, récupération 90 s en trot", "Si la moindre douleur apparaît, arrêter et marcher", "Retour au calme 10 min easy", phase.daysRemaining + ' jours avant retour au plan normal'],
+          guidance: ["Échauffement 15 min easy + 4 strides", "5×600 m à allure sous-seuil BAS, récupération 90 s en trot", "Si la moindre douleur apparaît, arrêter et marcher", "Retour au calme 10 min easy", remainingLine],
           steps: [
             { distanceMeters: 2000, pace: 'easy', note: 'WU' },
             { reps: 5, distanceMeters: 600, pace: 'lt1', recoverySeconds: 90, note: 'Sous-seuil bas' },
@@ -139,11 +158,11 @@ function buildComebackDay(date: string, dayIndex: number, phase: ReturnType<type
       }
       return {
         id: `comeback-${date}-easystrides`, date, type: 'easy',
-        title: `Reprise J${dayIndex + 1}/14 — footing + strides`,
+        title: `Reprise ${dayLabel} — footing + strides`,
         totalDistanceMeters: 8000, totalDurationSeconds: 48 * 60, rpe: 4,
         purpose: phase.description,
         feel: 'Facile mais on commence à se sentir bien. Pas de précipitation.',
-        guidance: ['45-50 min de footing facile', '4 à 6 strides à la fin', "Dernière phase avant retour au plan normal — restez patient", phase.daysRemaining + ' jours avant retour au plan normal'],
+        guidance: ['45-50 min de footing facile', '4 à 6 strides à la fin', "Dernière phase avant retour au plan normal — restez patient", remainingLine],
         steps: [
           { distanceMeters: 7000, pace: 'easy' },
           { reps: 4, distanceMeters: 100, pace: 'repetition', recoverySeconds: 60 },
@@ -151,4 +170,7 @@ function buildComebackDay(date: string, dayIndex: number, phase: ReturnType<type
       };
     }
   }
+
+  // Unreachable: phase.index covers 1..4 exhaustively above.
+  throw new Error(`Unhandled comeback phase index: ${(phase as { index: number }).index}`);
 }

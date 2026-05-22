@@ -206,18 +206,59 @@ export interface ComebackPhase {
 }
 
 /**
- * 14-day return-to-run protocol.
- *
- * Days 1-3 : walk-run alternation, 20-30 min, no quality
- * Days 4-7 : easy continuous, 30-40 min, no quality
- * Days 8-10: easy + 4-6 strides
- * Days 11-14: easy + ONE light sub-threshold (5×600 LT1) on day 13
+ * Length of the return-to-run protocol, scaled by how long the injury lasted.
+ * A short tweak (< 1 week) doesn't need 14 days of marche/course; an injury
+ * that pulled the runner out of training for 2 months does.
  */
-export function comebackPhase(ctx: ComebackContext): ComebackPhase | null {
+export function comebackProtocolDays(injuryDurationDays: number): number {
+  if (injuryDurationDays < 7) return 7;
+  if (injuryDurationDays < 21) return 14;
+  if (injuryDurationDays < 60) return 21;
+  return 28;
+}
+
+export interface ComebackSchedule {
+  totalDays: number;
+  /** day index (exclusive) where phase 1 (walk/run) ends */
+  phase1End: number;
+  /** day index (exclusive) where phase 2 (easy continuous) ends */
+  phase2End: number;
+  /** day index (exclusive) where phase 3 (easy + strides) ends */
+  phase3End: number;
+  /** 0-indexed day numbers that should be rest days */
+  restDays: number[];
+  /** 0-indexed day to insert the single light LT1 session */
+  lt1DayIndex: number;
+}
+
+const COMEBACK_SCHEDULES: Record<number, ComebackSchedule> = {
+  7:  { totalDays: 7,  phase1End: 2, phase2End: 4,  phase3End: 5,  restDays: [3],                 lt1DayIndex: 6  },
+  14: { totalDays: 14, phase1End: 3, phase2End: 7,  phase3End: 10, restDays: [3, 6, 10],          lt1DayIndex: 12 },
+  21: { totalDays: 21, phase1End: 5, phase2End: 11, phase3End: 16, restDays: [3, 8, 13, 18],      lt1DayIndex: 19 },
+  28: { totalDays: 28, phase1End: 7, phase2End: 15, phase3End: 22, restDays: [4, 9, 15, 21, 25],  lt1DayIndex: 26 },
+};
+
+export function comebackSchedule(totalDays: number): ComebackSchedule {
+  if (totalDays <= 7) return COMEBACK_SCHEDULES[7];
+  if (totalDays <= 14) return COMEBACK_SCHEDULES[14];
+  if (totalDays <= 21) return COMEBACK_SCHEDULES[21];
+  return COMEBACK_SCHEDULES[28];
+}
+
+/**
+ * 4-phase return-to-run protocol, scaled to 7/14/21/28 days.
+ *
+ * Phase 1 : walk-run alternation, 20-30 min, no quality
+ * Phase 2 : easy continuous, 30-40 min, no quality
+ * Phase 3 : easy + 4-6 strides
+ * Phase 4 : easy + ONE light sub-threshold (5×600 LT1) before plan resumes
+ */
+export function comebackPhase(ctx: ComebackContext, totalDays: number = 14): ComebackPhase | null {
   const day = comebackDayIndex(ctx);
-  if (day < 0 || day >= 14) return null;
-  const daysRemaining = 14 - day;
-  if (day < 3) {
+  const schedule = comebackSchedule(totalDays);
+  if (day < 0 || day >= schedule.totalDays) return null;
+  const daysRemaining = schedule.totalDays - day;
+  if (day < schedule.phase1End) {
     return {
       index: 1, label: 'Reprise — marche/course',
       description: "Alternance marche/course très progressive. Pas plus de 30 min total. L'erreur classique : aller trop vite parce qu'on se sent bien la première semaine.",
@@ -225,7 +266,7 @@ export function comebackPhase(ctx: ComebackContext): ComebackPhase | null {
       daysRemaining, easyMaxMinutes: 30, withStrides: false, withSubThreshold: false,
     };
   }
-  if (day < 7) {
+  if (day < schedule.phase2End) {
     return {
       index: 2, label: 'Reprise — footing continu',
       description: "Footing facile en continu, 30 à 40 min. Aucun travail de qualité. La progression du volume doit être imperceptible.",
@@ -233,7 +274,7 @@ export function comebackPhase(ctx: ComebackContext): ComebackPhase | null {
       daysRemaining, easyMaxMinutes: 40, withStrides: false, withSubThreshold: false,
     };
   }
-  if (day < 10) {
+  if (day < schedule.phase3End) {
     return {
       index: 3, label: 'Reprise — strides',
       description: "Footing + lignes droites (strides) à la fin pour réveiller le neuromusculaire sans stress métabolique.",
@@ -254,28 +295,54 @@ export function comebackPhase(ctx: ComebackContext): ComebackPhase | null {
 // =====================================================================
 
 /**
- * Progressive volume ramp after a planned break (off-season, post-race
- * downtime, vacation, etc.).
- *
- * Returns the cap on weekly km for week N (0-indexed) after the break ended.
- *   week 0 →  50 % of pre-break volume
- *   week 1 →  65 %
- *   week 2 →  80 %
- *   week 3 →  92 %
- *   week 4+ → 100 % (ramp complete)
- *
- * A 100 km/sem runner restarts at 50 km then climbs back to 100 over 4 weeks.
- * Designed to avoid the classic "I'm back, full volume immediately" trap that
- * causes most post-break injuries.
+ * Length of the progressive ramp after a break, scaled by break duration.
+ *   break < 1 week     →  2-week ramp
+ *   break 1-3 weeks    →  4-week ramp
+ *   break 3-6 weeks    →  6-week ramp
+ *   break > 6 weeks    →  8-week ramp
  */
-export function postBreakWeeklyKmCap(preBreakWeeklyKm: number, weeksSinceBreakEnd: number): number {
+export function postBreakRampWeeks(breakDurationDays: number): number {
+  if (breakDurationDays < 7) return 2;
+  if (breakDurationDays < 21) return 4;
+  if (breakDurationDays < 42) return 6;
+  return 8;
+}
+
+/**
+ * Per-week volume factors for each ramp length. Indexed by week-since-end.
+ * Long breaks restart at a lower fraction and climb more gently.
+ */
+const RAMP_FACTORS: Record<number, number[]> = {
+  2: [0.75, 0.90],
+  4: [0.50, 0.65, 0.80, 0.92],
+  6: [0.40, 0.55, 0.68, 0.80, 0.90, 0.96],
+  8: [0.30, 0.42, 0.54, 0.65, 0.75, 0.85, 0.92, 0.97],
+};
+
+/**
+ * Progressive volume cap after a planned break.
+ *
+ * A 2-week vacation restarts at 75 % of pre-break volume and reaches full
+ * volume in 2 weeks. A 2-month break (e.g. winter off-season after marathon)
+ * restarts at 30 % and takes 8 weeks. Designed to avoid the classic
+ * "I'm back, full volume immediately" trap that causes most post-break injuries.
+ */
+export function postBreakWeeklyKmCap(
+  preBreakWeeklyKm: number,
+  weeksSinceBreakEnd: number,
+  breakDurationDays: number = 14,
+): number {
   if (weeksSinceBreakEnd < 0) return preBreakWeeklyKm;
-  const factors = [0.50, 0.65, 0.80, 0.92];
+  const rampWeeks = postBreakRampWeeks(breakDurationDays);
+  const factors = RAMP_FACTORS[rampWeeks];
   if (weeksSinceBreakEnd >= factors.length) return preBreakWeeklyKm;
   return Math.round(preBreakWeeklyKm * factors[weeksSinceBreakEnd]);
 }
 
-/** Number of weeks of progressive ramp after a break ends. */
+/**
+ * @deprecated Use `postBreakRampWeeks(breakDurationDays)` instead — the ramp
+ * length now scales with how long the break lasted. Kept for back-compat.
+ */
 export const POST_BREAK_RAMP_WEEKS = 4;
 
 // =====================================================================
