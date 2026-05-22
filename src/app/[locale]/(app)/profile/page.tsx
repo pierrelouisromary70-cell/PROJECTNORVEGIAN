@@ -19,7 +19,7 @@ export default async function ProfilePage({
   const [{ data: profile }, { data: sub }, { data: strava }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
-    supabase.from('strava_connections').select('user_id, created_at').eq('user_id', user.id).maybeSingle(),
+    supabase.from('strava_connections').select('user_id, created_at, auto_sync').eq('user_id', user.id).maybeSingle(),
   ]);
 
   return (
@@ -35,6 +35,7 @@ export default async function ProfilePage({
       <StravaSection
         connected={!!strava}
         connectedAt={strava?.created_at ?? null}
+        autoSync={strava?.auto_sync ?? true}
         statusFlash={searchParams?.strava}
       />
       {profile && <ProfileForm profile={profile} locale={locale} />}

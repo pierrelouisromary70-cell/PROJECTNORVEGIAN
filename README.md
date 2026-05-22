@@ -74,12 +74,33 @@ Les allures LT1 / LT2 sont décalibrées de la T classique de Daniels pour reste
 4. Chaque jour : ressenti (fatigue 1–5, douleur 0–3, temps dispo) → la séance du jour s'adapte.
 5. Ajout d'une course objectif → le prochain bloc bascule en phase **spécifique / taper**.
 
+## Synchronisation Strava
+
+L'app supporte la connexion Strava en OAuth lecture seule + l'import automatique des courses via webhook.
+
+1. **Créer une app Strava** sur https://www.strava.com/settings/api
+   - Authorization Callback Domain = host de `NEXT_PUBLIC_APP_URL`
+   - Remplir `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_OAUTH_STATE_SECRET`, `STRAVA_VERIFY_TOKEN` dans `.env.local` / Vercel
+
+2. **Créer la subscription webhook une seule fois** (une seule subscription pour toute l'app, partagée par tous les utilisateurs) :
+   ```bash
+   curl -X POST https://www.strava.com/api/v3/push_subscriptions \
+     -F client_id=$STRAVA_CLIENT_ID \
+     -F client_secret=$STRAVA_CLIENT_SECRET \
+     -F callback_url=$NEXT_PUBLIC_APP_URL/api/strava/webhook \
+     -F verify_token=$STRAVA_VERIFY_TOKEN
+   ```
+   Strava va appeler le callback en `GET` avec `hub.challenge` pour vérifier — la route répond automatiquement si `STRAVA_VERIFY_TOKEN` correspond.
+
+3. **Une fois l'utilisateur connecté**, chaque nouvelle course Strava est importée dans les secondes qui suivent (sauf si l'utilisateur désactive la sync auto depuis son profil).
+
+Les courses qui correspondent à une séance du plan (même date, distance ±30 %, AM/PM tie-break pour les double-seuils) sont automatiquement validées dans `workout_logs`.
+
 ## Ce qu'il reste à brancher (V2)
 
 - Adaptation persistante du plan côté serveur (cron quotidien qui appelle `applyBlockAdaptation`)
-- Synchronisation montres GPS (Garmin Connect / Strava webhook)
+- Synchronisation Garmin Connect (Strava OAuth + webhook déjà implémentés)
 - Notifications push pour le ressenti du soir
-- Tests automatisés (Vitest pour la logique VDOT/plan/adaptation)
 
 ## Vie privée
 
