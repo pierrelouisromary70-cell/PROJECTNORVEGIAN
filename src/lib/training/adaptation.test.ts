@@ -29,9 +29,14 @@ describe('Workout adaptation', () => {
     expect(r.adapted).toBe(true);
   });
 
-  it('downgrades quality session on moderate pain (2)', () => {
-    const r = adaptWorkout(makeThreshold(), { fatigue: 2, pain: 2 });
-    expect(r.workout.type).toBe('easy');
+  it('reduces reps and drops a zone on moderate pain (2)', () => {
+    const original = makeThreshold();
+    const r = adaptWorkout(original, { fatigue: 2, pain: 2 });
+    expect(r.adapted).toBe(true);
+    expect(r.workout.totalDistanceMeters).toBeLessThan(original.totalDistanceMeters);
+    const origReps = original.steps.find((s) => s.reps)?.reps ?? 0;
+    const newReps = r.workout.steps.find((s) => s.reps)?.reps ?? 0;
+    expect(newReps).toBeLessThan(origReps);
   });
 
   it('keeps easy session as easy on moderate pain', () => {
@@ -45,9 +50,22 @@ describe('Workout adaptation', () => {
     expect(r.workout.type).toBe('rest');
   });
 
-  it('downgrades on high fatigue (4) for hard sessions', () => {
-    const r = adaptWorkout(makeThreshold(), { fatigue: 4, pain: 0 });
-    expect(r.workout.type).toBe('easy');
+  it('cuts reps 50% AND drops a zone on high fatigue (4) for hard sessions', () => {
+    const original = makeThreshold();
+    const r = adaptWorkout(original, { fatigue: 4, pain: 0 });
+    expect(r.adapted).toBe(true);
+    const origReps = original.steps.find((s) => s.reps)?.reps ?? 0;
+    const newReps = r.workout.steps.find((s) => s.reps)?.reps ?? 0;
+    expect(newReps).toBeLessThanOrEqual(Math.ceil(origReps * 0.55));
+  });
+
+  it('cuts reps 25% on moderate fatigue (3) without changing zone', () => {
+    const original = makeThreshold();
+    const r = adaptWorkout(original, { fatigue: 3, pain: 0 });
+    expect(r.adapted).toBe(true);
+    const origReps = original.steps.find((s) => s.reps)?.reps ?? 0;
+    const newReps = r.workout.steps.find((s) => s.reps)?.reps ?? 0;
+    expect(newReps).toBeLessThan(origReps);
   });
 
   it('reduces intensity in menstruation phase with elevated fatigue', () => {
