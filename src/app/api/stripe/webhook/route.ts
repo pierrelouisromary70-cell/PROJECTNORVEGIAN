@@ -27,6 +27,21 @@ export async function POST(req: Request) {
 
   const supabase = adminClient();
 
+  // Idempotency: Stripe retries on 5xx and on lost ACKs. Insert the event id
+  // first; if the unique-key insert fails, we've already seen this event.
+  // Acknowledge with 200 so Stripe stops retrying.
+  const { error: dedupErr } = await supabase
+    .from('webhook_events')
+    .insert({ stripe_event_id: event.id, event_type: event.type });
+  if (dedupErr) {
+    // 23505 = unique_violation in Postgres.
+    if ((dedupErr as { code?: string }).code === '23505') {
+      return NextResponse.json({ received: true, replay: true });
+    }
+    // Surface other DB errors so Stripe retries.
+    return NextResponse.json({ error: 'idempotency store failed' }, { status: 500 });
+  }
+
   switch (event.type) {
     case 'customer.subscription.created':
     case 'customer.subscription.updated':

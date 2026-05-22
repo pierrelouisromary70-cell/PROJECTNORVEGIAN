@@ -45,29 +45,45 @@ function Nav({ locale, c }: { locale: string; c: ReturnType<typeof useTranslatio
 
 function Hero({ locale, t }: { locale: string; t: ReturnType<typeof useTranslations<'landing'>> }) {
   return (
-    <section className="max-w-6xl mx-auto px-6 pt-20 md:pt-28 pb-16">
-      <span className="chip-accent">
-        <span className="h-1.5 w-1.5 rounded-full bg-aurora-600" />
-        {t('eyebrow')}
-      </span>
-      <h1 className="display text-5xl md:text-7xl mt-6 max-w-4xl">
-        {t('heroL1')}
-        <br />
-        <span className="italic font-display text-aurora-700">{t('heroL2')}</span>
-      </h1>
-      <p className="mt-8 text-lg md:text-xl text-ink-700 max-w-2xl leading-relaxed">{t('sub')}</p>
-      <div className="mt-10 flex flex-wrap gap-3">
-        <Link href={`/${locale}/signup`} className="btn-primary text-base px-7 py-3.5">
-          {t('cta')} <ArrowRight className="h-4 w-4" />
-        </Link>
-        <Link href="#method" className="btn-secondary text-base px-7 py-3.5">
-          {t('ctaSecondary')}
-        </Link>
-        <Link href={`/${locale}/zones`} className="btn-ghost text-base px-7 py-3.5">
-          Comprendre les zones d&apos;allure
-        </Link>
+    <section className="relative overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_70%_30%,theme(colors.aurora.100)_0%,transparent_70%),radial-gradient(40%_40%_at_10%_80%,theme(colors.aurora.50)_0%,transparent_70%)]"
+      />
+      <div className="relative max-w-6xl mx-auto px-6 pt-20 md:pt-28 pb-16 grid md:grid-cols-[1.4fr_1fr] gap-10 items-center">
+        <div>
+          <span className="chip-accent">
+            <span className="h-1.5 w-1.5 rounded-full bg-aurora-600" />
+            {t('eyebrow')}
+          </span>
+          <h1 className="display text-5xl md:text-7xl mt-6 max-w-4xl">
+            {t('heroL1')}
+            <br />
+            <span className="italic font-display text-aurora-700">{t('heroL2')}</span>
+          </h1>
+          <p className="mt-8 text-lg md:text-xl text-ink-700 max-w-2xl leading-relaxed">{t('sub')}</p>
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Link href={`/${locale}/signup`} className="btn-primary text-base px-7 py-3.5">
+              {t('cta')} <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link href="#method" className="btn-secondary text-base px-7 py-3.5">
+              {t('ctaSecondary')}
+            </Link>
+            <Link href={`/${locale}/zones`} className="btn-ghost text-base px-7 py-3.5">
+              Comprendre les zones d&apos;allure
+            </Link>
+          </div>
+          <p className="mt-4 text-sm text-ink-500">{t('ctaNote')}</p>
+        </div>
+        <div className="hidden md:flex justify-end">
+          <img
+            src="/runner-silhouette.svg"
+            alt=""
+            aria-hidden
+            className="h-[520px] w-auto opacity-95 drop-shadow-[0_25px_50px_rgba(15,23,42,0.15)]"
+          />
+        </div>
       </div>
-      <p className="mt-4 text-sm text-ink-500">{t('ctaNote')}</p>
     </section>
   );
 }
@@ -171,7 +187,7 @@ function Pricing({ locale, t }: { locale: string; t: ReturnType<typeof useTransl
         <div className="card">
           <div className="text-sm font-semibold text-ink-600 uppercase tracking-wider">{t('priceMonthly')}</div>
           <div className="mt-4 flex items-baseline gap-1">
-            <span className="font-display text-5xl font-bold">14,99 €</span>
+            <span className="font-display text-5xl font-bold">15 €</span>
             <span className="text-ink-600">/ {t('month')}</span>
           </div>
           <p className="mt-3 text-ink-600 text-sm">{t('priceMonthlyNote')}</p>
@@ -192,13 +208,13 @@ function Pricing({ locale, t }: { locale: string; t: ReturnType<typeof useTransl
           <div className="relative">
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold text-aurora-400 uppercase tracking-wider">{t('priceAnnual')}</div>
-              <span className="chip bg-aurora-500 text-ink-950 text-xs font-bold">{t('save')} 34 %</span>
+              <span className="chip bg-aurora-500 text-ink-950 text-xs font-bold">{t('save')} 33 %</span>
             </div>
             <div className="mt-4 flex items-baseline gap-1">
-              <span className="font-display text-5xl font-bold">9,92 €</span>
+              <span className="font-display text-5xl font-bold">10 €</span>
               <span className="text-ink-300">/ {t('month')}</span>
             </div>
-            <p className="mt-2 text-ink-300 text-sm">119 € {t('billedYearly')}</p>
+            <p className="mt-2 text-ink-300 text-sm">120 € {t('billedYearly')}</p>
             <p className="mt-3 text-ink-400 text-sm">{t('priceAnnualNote')}</p>
             <ul className="mt-6 space-y-2">
               {[t('feat1'), t('feat2'), t('feat3'), t('feat4'), t('feat5'), t('featAnnualBonus')].map((f) => (

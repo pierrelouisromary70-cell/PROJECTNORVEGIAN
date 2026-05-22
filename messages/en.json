@@ -80,7 +80,7 @@
     "faq5q": "Who designed the protocol you use?",
     "faq5a": "Our engine is based on the published work of Arturo Casado and Thomas Haugen on lactate-guided training, combined with Jack Daniels' Running Formula for pace zones. Everything is open and documented.",
     "finalTitle": "Your next training block starts tomorrow morning.",
-    "finalSub": "14 days to try, no card. If the method clicks, €14.99 a month."
+    "finalSub": "14 days to try, no card. If the method clicks, €15 / month or €120 / year."
   },
   "onboarding": {
     "title": "Let's get to know you",
@@ -149,7 +149,7 @@
   },
   "billing": {
     "trialBanner": "Free trial — {days} days left",
-    "upgrade": "Activate subscription (€14.99/month)",
+    "upgrade": "Activate subscription (€15/month or €120/year)",
     "manage": "Manage subscription"
   }
 }

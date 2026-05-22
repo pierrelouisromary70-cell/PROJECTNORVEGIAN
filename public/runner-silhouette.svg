@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600" fill="none" aria-hidden="true">
+  <!-- Editorial silhouette of a runner in stride. No identity, no photo
+       reference: a hand-tuned set of paths describing the canonical
+       Ingebrigtsen-style sub-threshold cadence pose. Free to use. -->
+  <defs>
+    <linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.6" />
+    </linearGradient>
+  </defs>
+  <!-- ground line -->
+  <line x1="20" y1="560" x2="460" y2="560" stroke="#22c55e" stroke-width="2" stroke-linecap="round" opacity="0.6" />
+  <!-- shadow under foot -->
+  <ellipse cx="225" cy="562" rx="55" ry="4" fill="#0f172a" opacity="0.18" />
+
+  <g fill="url(#rg)">
+    <!-- head -->
+    <circle cx="248" cy="92" r="26" />
+    <!-- neck / torso -->
+    <path d="M236 116 C 232 140, 220 178, 208 220 C 198 256, 194 286, 198 304 L 248 304 C 256 280, 268 240, 274 200 C 278 168, 270 132, 260 118 Z" />
+    <!-- front (right) arm pumped forward across body -->
+    <path d="M234 162 C 218 168, 196 188, 184 218 C 178 232, 184 240, 200 232 C 220 222, 240 198, 244 178 Z" />
+    <!-- back (left) arm extended behind -->
+    <path d="M256 158 C 274 172, 296 198, 308 232 C 312 246, 304 252, 290 246 C 270 236, 250 212, 248 188 Z" />
+    <!-- front (right) thigh lifted, knee high -->
+    <path d="M212 304 C 198 332, 184 372, 184 408 C 184 422, 200 426, 214 410 C 234 388, 252 352, 254 322 Z" />
+    <!-- front lower leg + foot -->
+    <path d="M186 404 C 178 432, 170 466, 168 494 C 167 506, 178 510, 188 500 C 202 484, 214 460, 220 432 L 220 414 Z" />
+    <path d="M168 498 C 162 510, 156 522, 162 528 C 172 534, 196 524, 212 514 C 218 510, 216 504, 210 502 Z" />
+    <!-- back (left) thigh driving back -->
+    <path d="M232 304 C 240 336, 252 376, 268 412 C 274 426, 286 426, 290 412 C 296 388, 290 350, 274 318 Z" />
+    <!-- back lower leg pushing off ground -->
+    <path d="M270 414 C 280 442, 290 478, 290 510 C 290 528, 270 538, 250 540 L 226 558 C 218 562, 222 568, 232 568 L 296 568 C 304 568, 308 560, 308 548 C 308 506, 302 460, 290 422 Z" />
+  </g>
+
+  <!-- subtle motion marks -->
+  <g stroke="#22c55e" stroke-width="2" stroke-linecap="round" opacity="0.55">
+    <line x1="60" y1="240" x2="120" y2="240" />
+    <line x1="40" y1="280" x2="110" y2="280" />
+    <line x1="70" y1="320" x2="130" y2="320" />
+  </g>
+</svg>

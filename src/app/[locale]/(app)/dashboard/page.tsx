@@ -10,6 +10,14 @@ import {
   postBreakRampWeeks,
   postBreakWeeklyKmCap,
 } from '@/lib/training/norwegian';
+import {
+  adaptWorkout,
+  detectCycleAnomaly,
+  inferCyclePhase,
+  type CyclePhase,
+  type FatigueLevel,
+  type PainLevel,
+} from '@/lib/training/adaptation';
 import type { RunnerProfile, TrainingBlock, Workout } from '@/lib/training/types';
 import { WorkoutCard } from '@/components/WorkoutCard';
 import { RacePredictor } from '@/components/RacePredictor';
@@ -252,12 +260,78 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   }
 
   const today = format(new Date(), 'yyyy-MM-dd');
-  const todayWorkouts: Workout[] = block.weeks.flatMap((w) => w.workouts).filter((w) => w.date === today);
+  const plannedToday: Workout[] = block.weeks.flatMap((w) => w.workouts).filter((w) => w.date === today);
   const upcoming: Workout[] = block.weeks.flatMap((w) => w.workouts).filter((w) => w.date > today).slice(0, 4);
+
+  // --- Today's adaptation (the engine in `adaptation.ts` is finally wired up here) ---
+  // Pull today's daily_log + latest cycle phase, then transform planned-today
+  // workouts before render so the runner sees the actually-recommended session
+  // rather than a stale plan that ignores their fatigue/pain/cycle/time input.
+  const [{ data: todayLog }, cycleData] = await Promise.all([
+    supabase
+      .from('daily_logs')
+      .select('fatigue,pain,available_minutes')
+      .eq('user_id', user.id)
+      .eq('log_date', today)
+      .maybeSingle(),
+    profile.track_cycle
+      ? supabase
+          .from('cycle_logs')
+          .select('period_start,cycle_length_days')
+          .eq('user_id', user.id)
+          .order('period_start', { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: null }),
+  ]);
+
+  let cyclePhase: CyclePhase | undefined;
+  let cycleAnomaly: ReturnType<typeof detectCycleAnomaly> = null;
+  if (profile.track_cycle && cycleData && 'data' in cycleData && cycleData.data && cycleData.data.length > 0) {
+    const latest = cycleData.data[0];
+    cyclePhase = inferCyclePhase(
+      new Date(latest.period_start),
+      new Date(),
+      latest.cycle_length_days ?? 28,
+    );
+    cycleAnomaly = detectCycleAnomaly(cycleData.data);
+  }
+
+  const adaptedToday = plannedToday.map((w) => {
+    if (!todayLog && !cyclePhase) return { workout: w, adapted: false, reason: [] as string[] };
+    return adaptWorkout(w, {
+      fatigue: (todayLog?.fatigue ?? 2) as FatigueLevel,
+      pain: (todayLog?.pain ?? 0) as PainLevel,
+      cyclePhase,
+      availableMinutes: todayLog?.available_minutes ?? undefined,
+    });
+  });
 
   return (
     <div className="space-y-6">
       {sub?.status === 'trialing' && <TrialBanner days={trialDaysLeft} locale={locale} />}
+
+      {cycleAnomaly && (
+        <div className="card border-amber-200 ring-amber-100">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-6 w-6 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-semibold text-ink-900">
+                {cycleAnomaly.kind === 'no_recent_log'
+                  ? `Aucune règle déclarée depuis ${cycleAnomaly.days} jours`
+                  : cycleAnomaly.kind === 'long_cycle'
+                    ? `Cycles longs détectés (~${cycleAnomaly.days} jours en moyenne)`
+                    : `Cycles courts détectés (~${cycleAnomaly.days} jours en moyenne)`}
+              </p>
+              <p className="text-ink-700 mt-1">
+                Cela peut être normal, mais ce signal est associé à un risque de RED-S
+                (Relative Energy Deficiency in Sport) chez la coureuse. Consultez un médecin du
+                sport ou un gynécologue si la situation se prolonge — l&apos;app n&apos;est pas un outil
+                de diagnostic.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {postBreakInfo && (
         <div className="card border-sky-200 ring-sky-100">
@@ -280,23 +354,38 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
         <h1 className="display text-4xl md:text-5xl text-ink-950">{t('today')}</h1>
       </header>
 
-      <TodayFeedback locale={locale} userId={user.id} todayDate={today} trackCycle={profile.track_cycle} />
+      <TodayFeedback
+        locale={locale}
+        userId={user.id}
+        todayDate={today}
+        trackCycle={profile.track_cycle}
+        cyclePhase={cyclePhase}
+      />
 
       <RacePredictor vdot={Number(profile.vdot)} />
 
-      {todayWorkouts.length === 0 ? (
+      {adaptedToday.length === 0 ? (
         <div className="card"><p className="text-ink-700">Pas de séance prévue aujourd&apos;hui.</p></div>
       ) : (
         <div className="space-y-4">
-          {todayWorkouts.map((w) => (
-            <WorkoutCard
-              key={w.id}
-              workout={w}
-              vdot={Number(profile.vdot)}
-              withLogControls
-              logStatus={logByWorkoutId.get(w.id)}
-              runnerLocale={locale}
-            />
+          {adaptedToday.map(({ workout, adapted, reason }) => (
+            <div key={workout.id} className="space-y-2">
+              {adapted && reason.length > 0 && (
+                <div className="rounded-xl bg-amber-50 ring-1 ring-amber-200 px-4 py-3 text-sm text-amber-900">
+                  <p className="font-semibold">Séance adaptée à votre ressenti du jour</p>
+                  <ul className="mt-1 list-disc pl-5 space-y-0.5">
+                    {reason.map((r, i) => <li key={i}>{r}</li>)}
+                  </ul>
+                </div>
+              )}
+              <WorkoutCard
+                workout={workout}
+                vdot={Number(profile.vdot)}
+                withLogControls
+                logStatus={logByWorkoutId.get(workout.id)}
+                runnerLocale={locale}
+              />
+            </div>
           ))}
         </div>
       )}

@@ -37,23 +37,51 @@ export default function OnboardingPage({ params: { locale } }: { params: { local
 
   const level = inferExperience({ experienceYears: years, currentWeeklyKm: weeklyKm, hasDoneIntervals: hasIntervals });
 
+  const [error, setError] = useState<string | null>(null);
+
   async function finish() {
     setSaving(true);
+    setError(null);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSaving(false); router.push(`/${locale}/login`); return; }
-    await supabase.from('profiles').upsert({
-      id: user.id, sex, experience_years: years, current_weekly_km: weeklyKm,
-      days_per_week: daysPerWeek, has_done_intervals: hasIntervals, goal,
-      vdot: vdot || 40, track_cycle: trackCycle,
-      time_constraints_min: maxMinutes === '' ? null : maxMinutes,
-      onboarded: true, locale, updated_at: new Date().toISOString(),
+
+    const raceTimeSeconds = parseHms(raceTime);
+    if (!raceTimeSeconds) {
+      setSaving(false);
+      setError('Format de temps invalide. Utilisez HH:MM:SS (ex. 00:50:00).');
+      return;
+    }
+
+    const res = await fetch('/api/onboarding', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        sex,
+        experienceYears: years,
+        weeklyKm,
+        daysPerWeek,
+        hasDoneIntervals: hasIntervals,
+        goal,
+        raceDistance: raceDist,
+        raceTimeSeconds,
+        timeConstraintMin: maxMinutes === '' ? null : Number(maxMinutes),
+        trackCycle: sex === 'female' ? trackCycle : false,
+        locale,
+      }),
     });
-    await supabase.from('race_results').insert({
-      user_id: user.id, distance_meters: RACE_PRESETS[raceDist],
-      time_seconds: parseHms(raceTime) || 3000,
-      raced_on: new Date().toISOString().slice(0, 10), computed_vdot: vdot,
-    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setSaving(false);
+      setError(
+        body?.error === 'race_time_implausible'
+          ? 'Le temps déclaré donne un VDOT incohérent. Vérifiez la distance et le temps.'
+          : 'Vos informations contiennent une erreur. Vérifiez les valeurs saisies.',
+      );
+      return;
+    }
+
     setSaving(false);
     router.push(`/${locale}/dashboard`);
   }
@@ -185,6 +213,12 @@ export default function OnboardingPage({ params: { locale } }: { params: { local
               <p className="text-sm text-ink-700">Vous êtes prêt. Cliquez sur Continuer pour générer votre premier plan.</p>
             )}
           </section>
+        )}
+
+        {error && (
+          <p className="mt-6 rounded-lg bg-red-50 ring-1 ring-red-200 px-4 py-3 text-sm text-red-800">
+            {error}
+          </p>
         )}
 
         <div className="flex justify-between mt-8">

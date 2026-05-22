@@ -80,7 +80,7 @@
     "faq5q": "Qui a conçu le protocole utilisé ?",
     "faq5a": "Notre moteur est basé sur les publications scientifiques d'Arturo Casado et Thomas Haugen sur l'entraînement lactate-guidé, croisées avec les principes de Jack Daniels (Running Formula) pour les zones d'allure. Tout est ouvert et documenté.",
     "finalTitle": "Votre prochain bloc d'entraînement commence demain matin.",
-    "finalSub": "14 jours pour tester, sans carte. Si la méthode vous convient, 14,99 € par mois."
+    "finalSub": "14 jours pour tester, sans carte. Si la méthode vous convient, 15 € par mois ou 120 € par an."
   },
   "onboarding": {
     "title": "On apprend à vous connaître",
@@ -149,7 +149,7 @@
   },
   "billing": {
     "trialBanner": "Essai gratuit — {days} jours restants",
-    "upgrade": "Activer l'abonnement (14,99 €/mois)",
+    "upgrade": "Activer l'abonnement (15 €/mois ou 120 €/an)",
     "manage": "Gérer mon abonnement"
   }
 }

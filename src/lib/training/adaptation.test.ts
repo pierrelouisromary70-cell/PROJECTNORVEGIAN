@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adaptWorkout, inferCyclePhase } from './adaptation';
+import { adaptWorkout, detectCycleAnomaly, inferCyclePhase } from './adaptation';
 import type { Workout } from './types';
 
 function makeThreshold(): Workout {
@@ -84,6 +84,39 @@ describe('Workout adaptation', () => {
     expect(inferCyclePhase(start, new Date('2026-05-02'))).toBe('menstruation');
     expect(inferCyclePhase(start, new Date('2026-05-09'))).toBe('follicular');
     expect(inferCyclePhase(start, new Date('2026-05-14'))).toBe('ovulation');
+    expect(inferCyclePhase(start, new Date('2026-05-20'))).toBe('luteal_early');
     expect(inferCyclePhase(start, new Date('2026-05-26'))).toBe('luteal_late');
+  });
+
+  it('returns unknown when last cycle log is past the grace window', () => {
+    const start = new Date('2026-01-01');
+    // 60 days past start of a 28-day cycle = well past grace, RED-S signal candidate.
+    expect(inferCyclePhase(start, new Date('2026-03-15'))).toBe('unknown');
+  });
+
+  it('respects ignoreCyclePhase opt-out', () => {
+    const r = adaptWorkout(makeThreshold(), {
+      fatigue: 3, pain: 0, cyclePhase: 'menstruation', ignoreCyclePhase: true,
+    });
+    // Still adapts for fatigue=3 (rep cut), but not for cycle.
+    expect(r.reason.find((s) => s.includes('Cycle'))).toBeUndefined();
+  });
+
+  it('flags amenorrhea when no period has been logged for > 90 days', () => {
+    const today = new Date('2026-06-01');
+    const r = detectCycleAnomaly([{ period_start: '2026-01-01', cycle_length_days: 28 }], today);
+    expect(r?.kind).toBe('no_recent_log');
+  });
+
+  it('flags long-cycle oligomenorrhea when avg gap > 45 days', () => {
+    const r = detectCycleAnomaly(
+      [
+        { period_start: '2026-05-01', cycle_length_days: null },
+        { period_start: '2026-03-10', cycle_length_days: null },
+        { period_start: '2026-01-15', cycle_length_days: null },
+      ],
+      new Date('2026-05-02'),
+    );
+    expect(r?.kind).toBe('long_cycle');
   });
 });
