@@ -250,6 +250,60 @@ export function comebackPhase(ctx: ComebackContext): ComebackPhase | null {
 }
 
 // =====================================================================
+// POST-BREAK PROGRESSIVE RAMP
+// =====================================================================
+
+/**
+ * Progressive volume ramp after a planned break (off-season, post-race
+ * downtime, vacation, etc.).
+ *
+ * Returns the cap on weekly km for week N (0-indexed) after the break ended.
+ *   week 0 →  50 % of pre-break volume
+ *   week 1 →  65 %
+ *   week 2 →  80 %
+ *   week 3 →  92 %
+ *   week 4+ → 100 % (ramp complete)
+ *
+ * A 100 km/sem runner restarts at 50 km then climbs back to 100 over 4 weeks.
+ * Designed to avoid the classic "I'm back, full volume immediately" trap that
+ * causes most post-break injuries.
+ */
+export function postBreakWeeklyKmCap(preBreakWeeklyKm: number, weeksSinceBreakEnd: number): number {
+  if (weeksSinceBreakEnd < 0) return preBreakWeeklyKm;
+  const factors = [0.50, 0.65, 0.80, 0.92];
+  if (weeksSinceBreakEnd >= factors.length) return preBreakWeeklyKm;
+  return Math.round(preBreakWeeklyKm * factors[weeksSinceBreakEnd]);
+}
+
+/** Number of weeks of progressive ramp after a break ends. */
+export const POST_BREAK_RAMP_WEEKS = 4;
+
+// =====================================================================
+// POST-RACE RECOVERY (after a priority-A race finishes)
+// =====================================================================
+
+/**
+ * Multiplier on weekly volume in the N weeks immediately following a
+ * priority-A race. Forces a real cooldown — you can't just jump back into
+ * full build the Monday after the marathon.
+ *
+ *   week 0 (race week itself, after the race) → 0.40
+ *   week 1 (the week after)                   → 0.55
+ *   week 2                                    → 0.75
+ *   week 3                                    → 0.90
+ *   week 4+                                   → 1.00
+ */
+export function postRaceRecoveryFactor(weeksSinceRace: number, priority: RacePriority = 'A'): number {
+  if (weeksSinceRace < 0) return 1.0;
+  if (priority === 'C') {
+    return weeksSinceRace === 0 ? 0.85 : 1.0;
+  }
+  const factors = priority === 'A' ? [0.40, 0.55, 0.75, 0.90] : [0.55, 0.75, 0.92];
+  if (weeksSinceRace >= factors.length) return 1.0;
+  return factors[weeksSinceRace];
+}
+
+// =====================================================================
 // VARIANT SELECTION — progressivity toward race
 // =====================================================================
 

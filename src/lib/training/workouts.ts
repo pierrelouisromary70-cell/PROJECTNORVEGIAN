@@ -64,7 +64,7 @@ const FR = {
   hills: {
     title: 'Côtes',
     purpose: 'Force, économie de course, puissance neuromusculaire.',
-    feel: 'Effort énergique.',
+    feel: 'Effort énergétique.',
     guidance: ['Posture droite, cadence rapide'],
   },
   strides: {
@@ -100,8 +100,27 @@ function copy(locale: Locale | undefined) { return locale === 'en' ? EN : FR; }
 let idCounter = 0;
 function nextId(date: string, suffix = '') { idCounter++; return `${date}-${idCounter}${suffix}`; }
 
-export function buildEasy({ date, weeklyKm, daysPerWeek, locale }: BuildArgs): Workout {
-  const km = Math.max(5, Math.round((weeklyKm / Math.max(daysPerWeek, 3)) * 0.9));
+/**
+ * Easy run with day-dependent duration so they don't all look the same.
+ * Monday  → "recovery footing" ~0.65× the average
+ * Tue/Wed → short-medium       ~0.85×
+ * Friday  → true recovery      ~0.55× (Friday is pre-long-run day)
+ * Sunday  → longest of the easy days ~1.15×
+ */
+const EASY_DAY_FACTORS: Record<number, number> = {
+  0: 0.65,
+  1: 0.85,
+  2: 0.85,
+  3: 0.85,
+  4: 0.55,
+  5: 1.0,
+  6: 1.15,
+};
+
+export function buildEasy({ date, weeklyKm, daysPerWeek, locale, index }: BuildArgs): Workout {
+  const factor = EASY_DAY_FACTORS[index ?? 0] ?? 1.0;
+  const baseKm = (weeklyKm / Math.max(daysPerWeek, 3)) * 0.9;
+  const km = Math.max(4, Math.round(baseKm * factor));
   const c = copy(locale).easy;
   return { id: nextId(date), date, type: 'easy', title: c.title, totalDistanceMeters: km * 1000, totalDurationSeconds: km * 330, rpe: 3, purpose: c.purpose, feel: c.feel, guidance: [...c.guidance], steps: [{ distanceMeters: km * 1000, pace: 'easy' }] };
 }
