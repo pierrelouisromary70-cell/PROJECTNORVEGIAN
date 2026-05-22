@@ -22,6 +22,7 @@ import {
   buildLt1AM,
   buildLt1PM,
   buildMarathonLongRun,
+  buildMixed,
   buildProgressive,
   buildRacePace,
   buildRest,
@@ -72,7 +73,8 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
     const workouts: Workout[] = [];
     for (let d = 0; d < 7; d++) {
       const date = format(addDays(weekStart, d), 'yyyy-MM-dd');
-      const base = { date, weeklyKm: phaseKm, daysPerWeek: profile.daysPerWeek, index: d, weekIndex: w, locale } as const;
+      const base = { date, weeklyKm: phaseKm, daysPerWeek: profile.daysPerWeek, index: d, weekIndex: w, locale, level } as const;
+      const mixedWeek = w > 0 && w % 5 === 4 && phase === 'build';
 
       switch (d) {
         case 0:
@@ -82,6 +84,8 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
         case 1:
           if (phase === 'specific' && raceDistanceMeters) {
             workouts.push(buildRacePace(base, raceDistanceMeters));
+          } else if (mixedWeek && tSessions >= 1 && level !== 'beginner') {
+            workouts.push(buildMixed(base));
           } else if (family === 'middle' && phase === 'build' && sSessions >= 1) {
             workouts.push(buildTrackSpecific(base));
           } else if (doubles && tSessions >= 3) {

@@ -393,7 +393,7 @@ export const HILL_VARIANTS: SessionVariant[] = [
   {
     label: 'Côtes courtes 10×45 s',
     structure: 'Dix montées de 45 s sur pente 5-8 %, retour en trottinant',
-    feelHint: "Effort énergique mais court. Vous récupérez à la descente.",
+    feelHint: "Effort énergétique mais court. Vous récupérez à la descente.",
     approachTips: ['Posture droite, regard à 5 m devant', 'Cadence élevée — pas de grandes foulées', 'Marchez/trottez à la descente'],
     build: (km) => [{ reps: scaleReps(km, 8, 14), durationSeconds: 45, pace: 'repetition', recoverySeconds: 90, note: 'En montée' }],
     workKm: (km) => scaleReps(km, 8, 14) * 0.15,
@@ -561,3 +561,243 @@ export const PROGRESSIVE_VARIANT: SessionVariant = {
   ],
   workKm: () => 12,
 };
+
+// =====================================================================
+// MIXED SESSIONS — combos that mix multiple zones in one session.
+// Inserted occasionally (every 4-5 weeks) to break monotony and stimulate
+// multiple energy systems within a single workout.
+// =====================================================================
+
+export const MIXED_VARIANTS: SessionVariant[] = [
+  {
+    label: 'Combo seuil + côtes (LT2 + R)',
+    structure: '4 × 1000 m seuil + 6 × 30 s côtes courtes',
+    feelHint: "Deux stimulations — d'abord lactique, puis neuromusculaire.",
+    approachTips: ["4 × 1000 m à allure LT2, récup 60 s", "5 min easy entre les blocs", "6 × 30 s en côte courte (pente 5-8 %)", "Excellent en milieu de phase build"],
+    build: () => [
+      { reps: 4, distanceMeters: 1000, pace: 'lt2', recoverySeconds: 60, note: 'Bloc seuil' },
+      { durationSeconds: 5 * 60, pace: 'easy', note: 'Récup 5 min' },
+      { reps: 6, durationSeconds: 30, pace: 'repetition', recoverySeconds: 90, note: 'Bloc côtes' },
+    ],
+    workKm: () => 5.5,
+  },
+  {
+    label: 'Combo VO2max + seuil (I + LT2)',
+    structure: '4 × 800 m VO2max puis 3 × 1000 m seuil',
+    feelHint: "On démarre fort sur la VO2max, puis on doit tenir au seuil avec les jambes lourdes.",
+    approachTips: ["4 × 800 m allure VO2max, récup 90 s", "5 min de footing entre les blocs", "3 × 1000 m allure seuil, récup 60 s", "Idéale en phase spécifique 5K-10K"],
+    build: () => [
+      { reps: 4, distanceMeters: 800, pace: 'interval', recoverySeconds: 90, note: 'Bloc VO2max' },
+      { durationSeconds: 5 * 60, pace: 'easy', note: 'Récup' },
+      { reps: 3, distanceMeters: 1000, pace: 'lt2', recoverySeconds: 60, note: 'Bloc seuil' },
+    ],
+    workKm: () => 6.2,
+  },
+  {
+    label: 'Combo sous-seuil + vitesse (LT1 + R)',
+    structure: '6 × 800 m LT1 + 8 × 100 m strides',
+    feelHint: "Volume au sous-seuil pour la fitness, vitesse pure pour rafraîchir le neuromusculaire.",
+    approachTips: ["6 × 800 m allure sous-seuil, récup 60 s", "5 min easy entre les blocs", "8 × 100 m strides, récupération complète", "Préparer un 10K ou un semi"],
+    build: () => [
+      { reps: 6, distanceMeters: 800, pace: 'lt1', recoverySeconds: 60, note: 'Bloc sous-seuil' },
+      { durationSeconds: 5 * 60, pace: 'easy', note: 'Récup' },
+      { reps: 8, distanceMeters: 100, pace: 'repetition', recoverySeconds: 60, note: 'Strides' },
+    ],
+    workKm: () => 5.6,
+  },
+  {
+    label: 'Combo "Sandwich" (LT1 + LT2 + LT1)',
+    structure: '3 × 1000 m LT1 + 2 × 1500 m LT2 + 3 × 1000 m LT1',
+    feelHint: "Le sandwich norvégien — séance signature des Ingebrigtsen.",
+    approachTips: ["Bloc 1 : 3 × 1000 m sous-seuil, récup 60 s", "Récup 3 min easy", "Bloc 2 : 2 × 1500 m seuil, récup 90 s", "Récup 3 min easy", "Bloc 3 : 3 × 1000 m sous-seuil, récup 60 s"],
+    build: () => [
+      { reps: 3, distanceMeters: 1000, pace: 'lt1', recoverySeconds: 60, note: 'Pain 1 — LT1' },
+      { durationSeconds: 3 * 60, pace: 'easy', note: 'Récup' },
+      { reps: 2, distanceMeters: 1500, pace: 'lt2', recoverySeconds: 90, note: 'Garniture — LT2' },
+      { durationSeconds: 3 * 60, pace: 'easy', note: 'Récup' },
+      { reps: 3, distanceMeters: 1000, pace: 'lt1', recoverySeconds: 60, note: 'Pain 2 — LT1' },
+    ],
+    workKm: () => 9,
+  },
+  {
+    label: 'Combo allure marathon + finish 5K',
+    structure: '8 km à allure marathon + 3 × 600 m allure 5K',
+    feelHint: "Simuler la dernière partie d'un marathon : on est cuit et il faut quand-même finir vite.",
+    approachTips: ["8 km en continu à allure marathon (M-pace)", "Récup 3 min easy", "3 × 600 m allure 5K, récup 90 s", "Réservée aux marathoniens en phase spécifique"],
+    build: () => [
+      { distanceMeters: 8000, pace: 'marathon', note: 'Bloc allure marathon' },
+      { durationSeconds: 3 * 60, pace: 'easy', note: 'Récup' },
+      { reps: 3, distanceMeters: 600, pace: 'interval', recoverySeconds: 90, note: 'Finish 5K' },
+    ],
+    workKm: () => 9.8,
+  },
+];
+
+// =====================================================================
+// BEGINNER VARIANTS — easier sessions for < 35 km/sem runners.
+// Fewer reps, longer recovery, never double-threshold.
+// =====================================================================
+
+export const BEGINNER_LT2_VARIANTS: SessionVariant[] = [
+  {
+    label: '3×800 m (débutant)',
+    structure: 'Trois 800 m à allure seuil bas, récup 90 s',
+    feelHint: "Effort soutenu mais contrôlé. À la fin, vous respirez fort mais vous pouvez dire 'ca va'.",
+    approachTips: ["Allure : seuil BAS, pas seuil haut", "Récupération longue (90 s)", "Si la 3e rep vous épuise, vous étiez trop rapide", "Idéal pour vos premières séances de seuil"],
+    build: () => [{ reps: 3, distanceMeters: 800, pace: 'lt2', recoverySeconds: 90 }],
+    workKm: () => 2.4,
+  },
+  {
+    label: '4×600 m (débutant)',
+    structure: 'Quatre 600 m à allure seuil, récup 75 s',
+    feelHint: "Reps courtes — apprendre à courir au seuil sans se mettre dans le rouge.",
+    approachTips: ["Allure : seuil bas", "Récup 75 s en trot léger ou marche", "Apprendre la sensation 'seuil', pas battre un record"],
+    build: () => [{ reps: 4, distanceMeters: 600, pace: 'lt2', recoverySeconds: 75 }],
+    workKm: () => 2.4,
+  },
+  {
+    label: 'Tempo 2×6 min (débutant)',
+    structure: 'Deux blocs de 6 min à allure seuil bas, 3 min récup',
+    feelHint: "Effort soutenu mais on se sent 'on contrôle'.",
+    approachTips: ["Démarrer doucement, monter en allure progressivement", "Récup 3 min en footing lent", "Excellent pour développer la résistance"],
+    build: () => [
+      { durationSeconds: 6 * 60, pace: 'lt2', note: 'Bloc 1' },
+      { durationSeconds: 3 * 60, pace: 'easy', note: 'Récup' },
+      { durationSeconds: 6 * 60, pace: 'lt2', note: 'Bloc 2' },
+    ],
+    workKm: () => 3.5,
+  },
+];
+
+export const BEGINNER_LT1_VARIANTS: SessionVariant[] = [
+  {
+    label: '4×800 m sous-seuil (débutant)',
+    structure: 'Quatre 800 m à allure sous-seuil, récup 75 s',
+    feelHint: "Très contrôlé. Deux phrases entre chaque respiration.",
+    approachTips: ["Allure : sous-seuil bas", "Ce n'est PAS du seuil — c'est plus lent", "Finir frais, comme si vous pouviez refaire la séance"],
+    build: () => [{ reps: 4, distanceMeters: 800, pace: 'lt1', recoverySeconds: 75 }],
+    workKm: () => 3.2,
+  },
+  {
+    label: '5×600 m sous-seuil (débutant)',
+    structure: 'Cinq 600 m à allure sous-seuil, récup 60 s',
+    feelHint: "Rythmé mais sans piquer.",
+    approachTips: ["Allure : 6-10 sec/km plus lent que votre allure seuil", "Récup en trot, pas marche", "Ne pas dépasser l'allure prescrite"],
+    build: () => [{ reps: 5, distanceMeters: 600, pace: 'lt1', recoverySeconds: 60 }],
+    workKm: () => 3,
+  },
+];
+
+// =====================================================================
+// ADVANCED VO2max VARIANTS — for ≥ 80 km/sem runners
+// =====================================================================
+
+export const ADVANCED_VO2_VARIANTS: SessionVariant[] = [
+  {
+    label: '8×600 m VO2max',
+    structure: 'Huit 600 m à allure 3K, récup 90 s',
+    feelHint: "Format efficient — VO2max sans saturer le système lactique.",
+    approachTips: ["Allure : 5-7 sec/km plus rapide que VO2max classique", "Récup 90 s ferme", "Volume idéal pour les avancés (≥ 80 km/sem)"],
+    build: (km) => [{ reps: scaleReps(km, 6, 10), distanceMeters: 600, pace: 'interval', recoverySeconds: 90 }],
+    workKm: (km) => scaleReps(km, 6, 10) * 0.6,
+  },
+  {
+    label: '3×1600 m VO2max long',
+    structure: 'Trois 1600 m à allure 5K, récup 3 min',
+    feelHint: "Reps très longues, exigeantes mentalement et physiquement.",
+    approachTips: ["Allure : 5K cible — un cran sous le 3K", "Récup 3 min en trot léger", "Volume ≥ 90 km/sem"],
+    build: () => [{ reps: 3, distanceMeters: 1600, pace: 'interval', recoverySeconds: 180 }],
+    workKm: () => 4.8,
+  },
+  {
+    label: 'I-pace fartlek 8×3 min',
+    structure: 'Huit fractions de 3 min à allure VO2max, 90 s récup',
+    feelHint: "Format temps — utile en nature ou sur sentier.",
+    approachTips: ["Allure : VO2max (3K-5K)", "Idéal en forêt ou sans piste", "Allure régulière sur chaque 3 min"],
+    build: () => [{ reps: 8, durationSeconds: 180, pace: 'interval', recoverySeconds: 90 }],
+    workKm: () => 6,
+  },
+];
+
+// =====================================================================
+// EXTRA HILL VARIANTS
+// =====================================================================
+
+export const EXTRA_HILL_VARIANTS: SessionVariant[] = [
+  {
+    label: 'Côtes très longues 4×3 min',
+    structure: 'Quatre montées de 3 min sur pente régulière 3-5 %',
+    feelHint: "Plus aérobie — travail de force-endurance pour longues distances.",
+    approachTips: ["Effort soutenu mais contrôlé (RPE 7)", "Pente modérée — pas un mur", "Excellent pour trail ou marathon vallonné"],
+    build: () => [{ reps: 4, durationSeconds: 180, pace: 'lt2', recoverySeconds: 240, note: 'En montée régulière' }],
+    workKm: () => 3,
+  },
+  {
+    label: 'Côtes + plat (combo)',
+    structure: '6 × (45 s côte + 200 m plat à seuil)',
+    feelHint: "La transition côte→plat travaille la conversion force-vitesse.",
+    approachTips: ["Côte de 45 s à effort énergétique", "Sans transition, enchaîner 200 m à plat à allure seuil", "Récup 2 min en trot", "Excellent pour les courses sur route vallonnée"],
+    build: () => [
+      { reps: 6, durationSeconds: 45, pace: 'repetition', recoverySeconds: 0, note: 'Côte' },
+      { reps: 6, distanceMeters: 200, pace: 'lt2', recoverySeconds: 120, note: 'À plat' },
+    ],
+    workKm: () => 2.5,
+  },
+];
+
+// =====================================================================
+// EXTRA SPEED VARIANTS
+// =====================================================================
+
+export const EXTRA_SPEED_VARIANTS: SessionVariant[] = [
+  {
+    label: '20×100 m strides progressives',
+    structure: 'Vingt strides de 100 m, allure progressive du 1er au dernier',
+    feelHint: "Travail technique et neuromusculaire pur. Zéro stress métabolique.",
+    approachTips: ["Allure : 80 % pour la 1ère, 95 % pour la dernière", "Récupération complète (1 min marche) entre chaque", "Posture haute, cadence rapide"],
+    build: () => [{ reps: 20, distanceMeters: 100, pace: 'repetition', recoverySeconds: 60 }],
+    workKm: () => 2,
+  },
+  {
+    label: '8×300 m vitesse',
+    structure: 'Huit 300 m à allure 1500 m, récup 2 min',
+    feelHint: "Court, rapide, propre — sensation d'athlétisme.",
+    approachTips: ["Allure : 800m-1500m cible", "Récup longue (2 min) pour qualité", "Sur piste si possible"],
+    build: (km) => [{ reps: scaleReps(km, 6, 10), distanceMeters: 300, pace: 'repetition', recoverySeconds: 120 }],
+    workKm: (km) => scaleReps(km, 6, 10) * 0.3,
+  },
+];
+
+// =====================================================================
+// LEVEL-AWARE POOL SELECTORS
+// Returns a variant pool combining base + level-specific extras so that
+// beginners see easier sessions and advanced runners see harder ones,
+// without losing variety from the base catalog.
+// =====================================================================
+
+export type RunnerLevelHint = 'beginner' | 'intermediate' | 'advanced' | 'elite';
+
+export function lt2PoolForLevel(level: RunnerLevelHint): SessionVariant[] {
+  if (level === 'beginner') return [...BEGINNER_LT2_VARIANTS, ...LT2_VARIANTS.slice(0, 3)];
+  return LT2_VARIANTS;
+}
+
+export function lt1AmPoolForLevel(level: RunnerLevelHint): SessionVariant[] {
+  if (level === 'beginner') return [...BEGINNER_LT1_VARIANTS, ...LT1_AM_VARIANTS.slice(0, 2)];
+  return LT1_AM_VARIANTS;
+}
+
+export function vo2PoolForLevel(level: RunnerLevelHint): SessionVariant[] {
+  if (level === 'advanced' || level === 'elite') return [...VO2_VARIANTS, ...ADVANCED_VO2_VARIANTS];
+  return VO2_VARIANTS;
+}
+
+export function hillsPoolForLevel(level: RunnerLevelHint): SessionVariant[] {
+  if (level === 'beginner') return HILL_VARIANTS.slice(0, 2);
+  return [...HILL_VARIANTS, ...EXTRA_HILL_VARIANTS];
+}
+
+export function speedPoolForLevel(level: RunnerLevelHint): SessionVariant[] {
+  if (level === 'beginner') return SPEED_VARIANTS.slice(0, 2);
+  return [...SPEED_VARIANTS, ...EXTRA_SPEED_VARIANTS];
+}
