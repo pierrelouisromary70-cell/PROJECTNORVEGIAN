@@ -1,11 +1,25 @@
 'use client';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import type { Workout, WorkoutStep } from '@/lib/training/types';
 import { buildPaceZones, formatRange, type PaceZones } from '@/lib/vdot/paces';
 import { formatDistance, formatDuration } from '@/lib/utils';
-import { Flame, Gauge, MapPin } from 'lucide-react';
+import { Flame, Gauge, MapPin, Play } from 'lucide-react';
+import { WorkoutLogControls, type WorkoutLogStatus } from './WorkoutLogControls';
 
-export function WorkoutCard({ workout, vdot, compact = false }: { workout: Workout; vdot: number; compact?: boolean }) {
+export interface WorkoutCardProps {
+  workout: Workout;
+  vdot: number;
+  compact?: boolean;
+  /** When true, show the validation/log controls under the card. */
+  withLogControls?: boolean;
+  /** Existing log status if the runner already validated this workout. */
+  logStatus?: WorkoutLogStatus;
+  /** Locale prefix for the in-app workout runner link (e.g. 'fr'). */
+  runnerLocale?: string;
+}
+
+export function WorkoutCard({ workout, vdot, compact = false, withLogControls = false, logStatus, runnerLocale }: WorkoutCardProps) {
   const t = useTranslations('workout');
   const zones = buildPaceZones(vdot);
 
@@ -64,6 +78,26 @@ export function WorkoutCard({ workout, vdot, compact = false }: { workout: Worko
             {workout.guidance.map((g, i) => <li key={i}>{g}</li>)}
           </ul>
         </Section>
+      )}
+
+      {(withLogControls || runnerLocale) && (
+        <div className="border-t border-ink-100 pt-4 space-y-3">
+          {runnerLocale && workout.type !== 'rest' && (
+            <Link
+              href={`/${runnerLocale}/workout/${encodeURIComponent(workout.id)}`}
+              className="btn-primary inline-flex"
+            >
+              <Play className="h-4 w-4" /> Dérouler la séance (chrono)
+            </Link>
+          )}
+          {withLogControls && (
+            <WorkoutLogControls
+              workoutId={workout.id}
+              workoutDate={workout.date}
+              initialStatus={logStatus}
+            />
+          )}
+        </div>
       )}
     </article>
   );
