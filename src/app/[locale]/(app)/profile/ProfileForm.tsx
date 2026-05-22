@@ -2,6 +2,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { DeclareInjuryButton, ComebackStartButton, ResumeNormalButton } from '../dashboard/InjuryStateControls';
+
+function InjuryControlsWidget() {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <DeclareInjuryButton />
+      <span className="text-sm text-ink-600">ou</span>
+      <ComebackStartButton />
+      <span className="text-sm text-ink-600">ou</span>
+      <ResumeNormalButton label="Revenir au plan normal" />
+    </div>
+  );
+}
 
 export function ProfileForm({ profile, locale }: { profile: any; locale: string }) {
   const router = useRouter();
@@ -79,6 +92,18 @@ export function ProfileForm({ profile, locale }: { profile: any; locale: string 
           <button type="button" className="btn-ghost" onClick={logout}>Déconnexion</button>
         </div>
       </form>
+
+      <div className="card border-amber-200 ring-amber-100">
+        <h2 className="font-semibold text-amber-700">Blessure / arrêt prolongé</h2>
+        <p className="text-sm text-ink-700 mt-2">
+          Si vous êtes blessé(e) ou devez vous arrêter (maladie, voyage, vie pro intense), mettez votre
+          plan en pause depuis ici. Quand vous serez prêt(e), un protocole de reprise progressif sur 14
+          jours vous accompagnera.
+        </p>
+        <div className="mt-4">
+          <InjuryControlsWidget />
+        </div>
+      </div>
 
       <div className="card border-red-200 ring-red-100">
         <h2 className="font-semibold text-red-700">Zone dangereuse</h2>
