@@ -16,8 +16,14 @@ git clone https://github.com/pierrelouisromary70-cell/projectnorvegian.git
 cd projectnorvegian
 git checkout claude/fervent-cori-mNZEX
 npm install
+bash scripts/finish-next15-migration.sh   # applique les transformations codemod restantes
 cp .env.example .env.local
 ```
+
+Le script `finish-next15-migration.sh` exécute le codemod `next-async-request-api`
+(qui transforme les `params` / `cookies()` / `headers()` en versions async pour
+Next 15) puis ajoute `await` devant chaque `createClient()` côté serveur. Il est
+idempotent — vous pouvez le relancer.
 
 ## 2. Supabase
 
