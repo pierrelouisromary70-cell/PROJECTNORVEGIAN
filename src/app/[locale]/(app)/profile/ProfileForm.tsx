@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { DeclareInjuryButton, ComebackStartButton, ResumeNormalButton } from '../dashboard/InjuryStateControls';
+import { StartBreakButton, EndBreakButton } from '../dashboard/BreakStateControls';
 
 function InjuryControlsWidget() {
   return (
@@ -12,6 +13,14 @@ function InjuryControlsWidget() {
       <ComebackStartButton />
       <span className="text-sm text-ink-600">ou</span>
       <ResumeNormalButton label="Revenir au plan normal" />
+    </div>
+  );
+}
+
+function BreakControlsWidget({ inBreak }: { inBreak: boolean }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {inBreak ? <EndBreakButton /> : <StartBreakButton />}
     </div>
   );
 }
@@ -93,12 +102,25 @@ export function ProfileForm({ profile, locale }: { profile: any; locale: string 
         </div>
       </form>
 
-      <div className="card border-amber-200 ring-amber-100">
-        <h2 className="font-semibold text-amber-700">Blessure / arrêt prolongé</h2>
+      <div className="card border-sky-200 ring-sky-100">
+        <h2 className="font-semibold text-sky-700">Coupure volontaire</h2>
         <p className="text-sm text-ink-700 mt-2">
-          Si vous êtes blessé(e) ou devez vous arrêter (maladie, voyage, vie pro intense), mettez votre
-          plan en pause depuis ici. Quand vous serez prêt(e), un protocole de reprise progressif sur 14
-          jours vous accompagnera.
+          Coupure après un objectif A, vacances, période chargée — déclarez une coupure pour mettre
+          votre plan en pause sans culpabiliser. À la reprise, votre volume remontera progressivement
+          sur 4 semaines (50 % → 65 % → 80 % → 92 % → plein volume) pour éviter le piège du
+          « je reprends à 100 km dès lundi ».
+        </p>
+        <div className="mt-4">
+          <BreakControlsWidget inBreak={!!(profile.break_started_on && !profile.break_ended_on)} />
+        </div>
+      </div>
+
+      <div className="card border-amber-200 ring-amber-100">
+        <h2 className="font-semibold text-amber-700">Blessure / arrêt subi</h2>
+        <p className="text-sm text-ink-700 mt-2">
+          Si vous êtes blessé(e), mettez votre plan en pause depuis ici. Quand vous serez prêt(e), un
+          protocole de reprise progressif sur 14 jours vous accompagnera (marche/course, puis
+          continu, puis strides, puis première séance LT1 légère).
         </p>
         <div className="mt-4">
           <InjuryControlsWidget />

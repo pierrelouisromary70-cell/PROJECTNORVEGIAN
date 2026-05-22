@@ -1,16 +1,18 @@
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { format } from 'date-fns';
-import { AlertTriangle, HeartHandshake } from 'lucide-react';
+import { AlertTriangle, HeartHandshake, Coffee } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { generatePlan } from '@/lib/training/plan-generator';
 import { generateComebackPlan } from '@/lib/training/comeback-plan';
+import { POST_BREAK_RAMP_WEEKS, postBreakWeeklyKmCap } from '@/lib/training/norwegian';
 import type { RunnerProfile, TrainingBlock, Workout } from '@/lib/training/types';
 import { WorkoutCard } from '@/components/WorkoutCard';
 import { RacePredictor } from '@/components/RacePredictor';
 import { TodayFeedback } from './TodayFeedback';
 import { TrialBanner } from './TrialBanner';
 import { ComebackStartButton, ResumeNormalButton } from './InjuryStateControls';
+import { EndBreakButton } from './BreakStateControls';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +58,43 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
               </ul>
               <div className="mt-6">
                 <ComebackStartButton />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // === PLANNED BREAK STATE: voluntary off-period (post-race, holidays, etc.) ===
+  if (profile.break_started_on && !profile.break_ended_on) {
+    return (
+      <div className="space-y-6">
+        {sub?.status === 'trialing' && <TrialBanner days={trialDaysLeft} locale={locale} />}
+        <header>
+          <p className="text-sm text-ink-600">{format(new Date(), 'EEEE dd MMMM')}</p>
+          <h1 className="display text-4xl md:text-5xl text-ink-950">Coupure en cours</h1>
+        </header>
+        <div className="card border-sky-200 ring-sky-100">
+          <div className="flex items-start gap-4">
+            <Coffee className="h-8 w-8 text-sky-600 shrink-0 mt-1" />
+            <div>
+              <h2 className="font-semibold text-ink-900 text-lg">En coupure depuis le {profile.break_started_on}</h2>
+              <p className="text-ink-700 mt-2">
+                Votre plan est volontairement mis en pause. Coupure post-course, vacances, vie pro
+                intense — toutes les bonnes raisons de souffler. Pas de culpabilité : la coupure fait
+                partie de la planification.
+              </p>
+              <ul className="mt-4 space-y-1.5 text-sm text-ink-700">
+                <li>• Vous pouvez courir quand vous voulez, sans plan ni structure</li>
+                <li>• Activité croisée bienvenue (vélo, natation, randonnée)</li>
+                <li>• À la reprise, le plan augmentera progressivement sur {POST_BREAK_RAMP_WEEKS} semaines</li>
+                {profile.pre_break_weekly_km && (
+                  <li>• Vous reprendrez à ~{Math.round(Number(profile.pre_break_weekly_km) * 0.5)} km/sem (50 % de votre volume habituel), pour remonter à {Math.round(Number(profile.pre_break_weekly_km))} km/sem en 4 semaines</li>
+                )}
+              </ul>
+              <div className="mt-6">
+                <EndBreakButton />
               </div>
             </div>
           </div>
@@ -124,14 +163,38 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
     );
   }
 
+  // === POST-BREAK RAMP-UP DETECTION ===
+  // If a break ended recently, cap the current weekly km on a 4-week ramp
+  // so we don't throw the runner back at 100 % from day one.
+  let postBreakInfo: { weeksSinceEnd: number; cappedKm: number; preBreakKm: number } | null = null;
+  if (profile.break_ended_on && profile.pre_break_weekly_km) {
+    const weeksSinceEnd = Math.floor(
+      (Date.now() - new Date(profile.break_ended_on).getTime()) / (7 * 86400000),
+    );
+    if (weeksSinceEnd < POST_BREAK_RAMP_WEEKS) {
+      postBreakInfo = {
+        weeksSinceEnd,
+        preBreakKm: Number(profile.pre_break_weekly_km),
+        cappedKm: postBreakWeeklyKmCap(Number(profile.pre_break_weekly_km), weeksSinceEnd),
+      };
+    } else {
+      // Ramp complete — clear the flags so the runner returns to normal.
+      await supabase.from('profiles').update({
+        break_started_on: null,
+        break_ended_on: null,
+        pre_break_weekly_km: null,
+      }).eq('id', user.id);
+    }
+  }
+
   // === NORMAL STATE ===
   let block: TrainingBlock;
-  if (blockRow && new Date(blockRow.end_date) >= new Date()) {
+  if (blockRow && new Date(blockRow.end_date) >= new Date() && !postBreakInfo) {
     block = blockRow.payload as TrainingBlock;
   } else {
     const runner: RunnerProfile = {
       experienceYears: Number(profile.experience_years),
-      currentWeeklyKm: Number(profile.current_weekly_km),
+      currentWeeklyKm: postBreakInfo ? postBreakInfo.cappedKm : Number(profile.current_weekly_km),
       daysPerWeek: profile.days_per_week,
       hasDoneIntervals: profile.has_done_intervals,
       goal: profile.goal,
@@ -165,6 +228,22 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   return (
     <div className="space-y-6">
       {sub?.status === 'trialing' && <TrialBanner days={trialDaysLeft} locale={locale} />}
+
+      {postBreakInfo && (
+        <div className="card border-sky-200 ring-sky-100">
+          <div className="flex items-start gap-3">
+            <Coffee className="h-6 w-6 text-sky-600 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-semibold text-ink-900">
+                Reprise après coupure — semaine {postBreakInfo.weeksSinceEnd + 1} / {POST_BREAK_RAMP_WEEKS}
+              </p>
+              <p className="text-ink-700 mt-1">
+                Volume plafonné à {postBreakInfo.cappedKm} km/sem ({Math.round(100 * postBreakInfo.cappedKm / postBreakInfo.preBreakKm)} % de votre volume d&apos;avant coupure). Plein volume rétabli dans {POST_BREAK_RAMP_WEEKS - postBreakInfo.weeksSinceEnd} sem.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <header>
         <p className="text-sm text-ink-600">{format(new Date(), 'EEEE dd MMMM')}</p>
