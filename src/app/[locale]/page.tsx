@@ -33,6 +33,7 @@ function Nav({ locale, c }: { locale: string; c: ReturnType<typeof useTranslatio
         </Link>
         <nav className="flex items-center gap-2">
           <Link className="btn-ghost text-sm" href="#method">La méthode</Link>
+          <Link className="btn-ghost text-sm hidden md:inline-flex" href={`/${locale}/zones`}>Zones d&apos;allure</Link>
           <Link className="btn-ghost text-sm hidden md:inline-flex" href="#pricing">Tarifs</Link>
           <Link className="btn-ghost text-sm" href={`/${locale}/login`}>{c('signIn')}</Link>
           <Link className="btn-primary text-sm" href={`/${locale}/signup`}>{c('signUp')}</Link>
@@ -61,6 +62,9 @@ function Hero({ locale, t }: { locale: string; t: ReturnType<typeof useTranslati
         </Link>
         <Link href="#method" className="btn-secondary text-base px-7 py-3.5">
           {t('ctaSecondary')}
+        </Link>
+        <Link href={`/${locale}/zones`} className="btn-ghost text-base px-7 py-3.5">
+          Comprendre les zones d&apos;allure
         </Link>
       </div>
       <p className="mt-4 text-sm text-ink-500">{t('ctaNote')}</p>
@@ -268,6 +272,7 @@ function Footer({ locale }: { locale: string }) {
           <Link href={`/${locale === 'fr' ? 'en' : 'fr'}`} className="hover:text-ink-900">
             {locale === 'fr' ? 'English' : 'Français'}
           </Link>
+          <Link href={`/${locale}/zones`} className="hover:text-ink-900">Zones d&apos;allure</Link>
           <Link href={`/${locale}/legal/terms`} className="hover:text-ink-900">CGU</Link>
           <Link href={`/${locale}/legal/privacy`} className="hover:text-ink-900">Confidentialité</Link>
           <a href="mailto:contact@nordicrun.app" className="hover:text-ink-900">Contact</a>
