@@ -56,6 +56,13 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
   const weeks: TrainingWeek[] = [];
   let currentKm = profile.currentWeeklyKm;
 
+  // Absolute week number since epoch — used to seed variant rotation so that
+  // sessions keep advancing through the WHOLE variant pool across consecutive
+  // 4-week blocks. Using the in-block index (0-3) made week 0 always pick
+  // variant[0] and never reach variants beyond the 4th — the root cause of
+  // the "same sessions every block" repetitiveness.
+  const rotationSeed = Math.floor(start.getTime() / (7 * 86400000));
+
   for (let w = 0; w < weeksCount; w++) {
     const weekStart = addDays(start, w * 7);
     const phase: TrainingPhase = computePhase(w, weeksCount, args.raceDate, weekStart, racePriority);
@@ -74,7 +81,10 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
     const workouts: Workout[] = [];
     for (let d = 0; d < 7; d++) {
       const date = format(addDays(weekStart, d), 'yyyy-MM-dd');
-      const base = { date, weeklyKm: phaseKm, daysPerWeek: profile.daysPerWeek, index: d, weekIndex: w, locale, level } as const;
+      // weekIndex drives variant rotation in the workout builders — feed it
+      // the absolute week so the pool keeps cycling across blocks. Local-week
+      // logic (deload, mixed week, phase) uses the loop variable `w` directly.
+      const base = { date, weeklyKm: phaseKm, daysPerWeek: profile.daysPerWeek, index: d, weekIndex: rotationSeed + w, locale, level } as const;
       const mixedWeek = w > 0 && w % 5 === 4 && phase === 'build';
 
       switch (d) {
@@ -141,6 +151,28 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
         case 6:
           workouts.push(buildEasy(base));
           break;
+      }
+    }
+
+    // Make easy runs the volume buffer: scale them so the week sums to the
+    // target phaseKm regardless of which quality variant was drawn. Without
+    // this, picking a high-volume threshold variant (e.g. 12×1000) vs a short
+    // one (tempo 20 min) made the weekly total swing wildly and drift off the
+    // progressive target — the root of the "volume feels low / inconsistent"
+    // complaint.
+    const easyRuns = workouts.filter((wk) => wk.type === 'easy');
+    const nonEasyKm = workouts
+      .filter((wk) => wk.type !== 'easy')
+      .reduce((sum, wk) => sum + wk.totalDistanceMeters / 1000, 0);
+    const currentEasyKm = easyRuns.reduce((sum, wk) => sum + wk.totalDistanceMeters / 1000, 0);
+    const targetEasyKm = phaseKm - nonEasyKm;
+    if (easyRuns.length > 0 && currentEasyKm > 0 && targetEasyKm > 0) {
+      const scale = targetEasyKm / currentEasyKm;
+      for (const wk of easyRuns) {
+        const km = Math.max(4, Math.round((wk.totalDistanceMeters / 1000) * scale));
+        wk.totalDistanceMeters = km * 1000;
+        wk.totalDurationSeconds = km * 330;
+        wk.steps = [{ distanceMeters: km * 1000, pace: 'easy' }];
       }
     }
 

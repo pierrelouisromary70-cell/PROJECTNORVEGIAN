@@ -62,4 +62,35 @@ describe('Norwegian plan generator', () => {
     const lastWeek = b.weeks[b.weeks.length - 1];
     expect(['taper', 'specific']).toContain(lastWeek.phase);
   });
+
+  it('gives the beginner a sub-threshold (LT1) session — the Norwegian signature', () => {
+    const b = generatePlan({ profile: baseProfile, startDate: new Date('2026-06-01') });
+    const lt1 = b.weeks.flatMap((w) => w.workouts).filter((w) => w.type === 'lt1_threshold');
+    expect(lt1.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('does not repeat hills every single week for a beginner', () => {
+    const b = generatePlan({ profile: baseProfile, startDate: new Date('2026-06-01') });
+    const hillsWeeks = b.weeks.filter((w) => w.workouts.some((x) => x.type === 'hills')).length;
+    // Hills should appear at most once in a 4-week block (every 3rd week), not weekly.
+    expect(hillsWeeks).toBeLessThanOrEqual(2);
+  });
+
+  it('rotates the primary session across consecutive blocks (no carbon-copy)', () => {
+    const blockA = generatePlan({ profile: baseProfile, startDate: new Date('2026-06-01') });
+    const blockB = generatePlan({ profile: baseProfile, startDate: new Date('2026-06-29') });
+    // Tuesday (day index 1) primary quality session of week 0.
+    const tueA = blockA.weeks[0].workouts.find((w) => w.date === '2026-06-02');
+    const tueB = blockB.weeks[0].workouts.find((w) => w.date === '2026-06-30');
+    expect(tueA?.title).not.toBe(tueB?.title);
+  });
+
+  it('weekly volume tracks the progressive target regardless of variant drawn', () => {
+    const b = generatePlan({ profile: baseProfile, startDate: new Date('2026-06-01') });
+    // Non-recovery weeks (0,1,2) should not collapse far below the declared
+    // starting volume — the easy-run buffer keeps the week on target.
+    for (const w of b.weeks.slice(0, 3)) {
+      expect(w.totalKm).toBeGreaterThanOrEqual(28);
+    }
+  });
 });

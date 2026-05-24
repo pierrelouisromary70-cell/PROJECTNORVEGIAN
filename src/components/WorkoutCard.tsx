@@ -1,10 +1,11 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import type { Workout, WorkoutStep } from '@/lib/training/types';
 import { buildPaceZones, formatRange, type PaceZones } from '@/lib/vdot/paces';
 import { formatDistance, formatDuration } from '@/lib/utils';
-import { Flame, Gauge, MapPin, Play } from 'lucide-react';
+import { ChevronDown, Flame, Gauge, MapPin, Play } from 'lucide-react';
 import { WorkoutLogControls, type WorkoutLogStatus } from './WorkoutLogControls';
 
 // Map RPE (1-10) → tailwind border + chip tints. RPE is the most honest one-glance
@@ -33,16 +34,43 @@ export function WorkoutCard({ workout, vdot, compact = false, withLogControls = 
   const t = useTranslations('workout');
   const zones = buildPaceZones(vdot);
   const tint = intensityTint(workout.rpe);
+  const [open, setOpen] = useState(false);
+  const hasDetail = workout.steps.length > 0 || workout.guidance.length > 0;
 
   if (compact) {
     return (
-      <div className={`card flex items-start justify-between gap-4 border-l-4 ${tint.rail}`}>
-        <div>
-          <div className="text-xs text-fjord-600 uppercase tracking-wide">{workout.date}{workout.amPm ? ` · ${workout.amPm}` : ''}</div>
-          <div className="font-semibold text-fjord-900">{workout.title}</div>
-          <div className="text-sm text-fjord-700">{formatDistance(workout.totalDistanceMeters)} · {formatDuration(workout.totalDurationSeconds)}</div>
-        </div>
-        <span className={`chip ${tint.chip}`}><Gauge className="h-3 w-3" /> RPE {workout.rpe || '—'}</span>
+      <div className={`card border-l-4 ${tint.rail} !p-0 overflow-hidden`}>
+        <button
+          type="button"
+          onClick={() => hasDetail && setOpen((v) => !v)}
+          className="w-full flex items-start justify-between gap-4 p-5 text-left"
+          aria-expanded={open}
+        >
+          <div>
+            <div className="text-xs text-fjord-600 uppercase tracking-wide">{workout.date}{workout.amPm ? ` · ${workout.amPm}` : ''}</div>
+            <div className="font-semibold text-fjord-900">{workout.title}</div>
+            <div className="text-sm text-fjord-700">{formatDistance(workout.totalDistanceMeters)} · {formatDuration(workout.totalDurationSeconds)}</div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={`chip ${tint.chip}`}><Gauge className="h-3 w-3" /> RPE {workout.rpe || '—'}</span>
+            {hasDetail && (
+              <ChevronDown className={`h-4 w-4 text-ink-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+            )}
+          </div>
+        </button>
+        {open && hasDetail && (
+          <div className="px-5 pb-5 -mt-1">
+            <WorkoutDetail workout={workout} zones={zones} t={t} />
+            {runnerLocale && workout.type !== 'rest' && (
+              <Link
+                href={`/${runnerLocale}/workout/${encodeURIComponent(workout.id)}`}
+                className="btn-secondary inline-flex mt-4 text-sm"
+              >
+                <Play className="h-4 w-4" /> Dérouler la séance (chrono)
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -63,34 +91,7 @@ export function WorkoutCard({ workout, vdot, compact = false, withLogControls = 
         </div>
       </header>
 
-      <Section title={t('purpose')}>
-        <p className="text-fjord-800">{workout.purpose}</p>
-      </Section>
-      <Section title={t('feel')}>
-        <p className="text-fjord-800">{workout.feel}</p>
-      </Section>
-
-      <Section title={t('detail')}>
-        <ol className="space-y-2">
-          {workout.steps.map((s, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <span className="mt-1 h-6 w-6 shrink-0 rounded-full bg-fjord-100 text-fjord-700 text-xs grid place-items-center font-semibold">{i + 1}</span>
-              <div>
-                <div className="font-medium text-fjord-900">{renderStep(s, zones, t('recovery'))}</div>
-                {s.note && <div className="text-sm text-fjord-600">{s.note}</div>}
-              </div>
-            </li>
-          ))}
-        </ol>
-      </Section>
-
-      {workout.guidance.length > 0 && (
-        <Section title={t('guidance')}>
-          <ul className="list-disc pl-5 space-y-1 text-fjord-800">
-            {workout.guidance.map((g, i) => <li key={i}>{g}</li>)}
-          </ul>
-        </Section>
-      )}
+      <WorkoutDetail workout={workout} zones={zones} t={t} />
 
       {(withLogControls || runnerLocale) && (
         <div className="border-t border-ink-100 pt-4 space-y-3">
@@ -112,6 +113,49 @@ export function WorkoutCard({ workout, vdot, compact = false, withLogControls = 
         </div>
       )}
     </article>
+  );
+}
+
+/** Shared session breakdown: purpose, feel, step-by-step (WU / reps + paces +
+ *  recovery / CD), and coach cues. Used by both the full card and the
+ *  expanded compact card so an upcoming session shows the exact same detail
+ *  as today's. */
+function WorkoutDetail({ workout, zones, t }: { workout: Workout; zones: PaceZones; t: ReturnType<typeof useTranslations<'workout'>> }) {
+  return (
+    <div className="space-y-5">
+      {workout.purpose && (
+        <Section title={t('purpose')}>
+          <p className="text-fjord-800">{workout.purpose}</p>
+        </Section>
+      )}
+      {workout.feel && (
+        <Section title={t('feel')}>
+          <p className="text-fjord-800">{workout.feel}</p>
+        </Section>
+      )}
+      {workout.steps.length > 0 && (
+        <Section title={t('detail')}>
+          <ol className="space-y-2">
+            {workout.steps.map((s, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="mt-1 h-6 w-6 shrink-0 rounded-full bg-fjord-100 text-fjord-700 text-xs grid place-items-center font-semibold">{i + 1}</span>
+                <div>
+                  <div className="font-medium text-fjord-900">{renderStep(s, zones, t('recovery'))}</div>
+                  {s.note && <div className="text-sm text-fjord-600">{s.note}</div>}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Section>
+      )}
+      {workout.guidance.length > 0 && (
+        <Section title={t('guidance')}>
+          <ul className="list-disc pl-5 space-y-1 text-fjord-800">
+            {workout.guidance.map((g, i) => <li key={i}>{g}</li>)}
+          </ul>
+        </Section>
+      )}
+    </div>
   );
 }
 
