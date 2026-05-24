@@ -179,6 +179,29 @@ export function buildSingleThreshold({ date, weeklyKm, weekIndex, locale, level 
   };
 }
 
+/**
+ * Single sub-threshold (LT1) session — the bread-and-butter of the Norwegian
+ * model for runners who aren't yet on a double-threshold protocol. This is
+ * NOT a double day (no AM/PM split), just one controlled sub-threshold
+ * workout. RPE 6, deliberately one notch below the LT2 session so the runner
+ * accumulates time at threshold without digging fatigue.
+ */
+export function buildSubThreshold({ date, weeklyKm, weekIndex, locale, level }: BuildArgs): Workout {
+  const c = copy(locale).lt1_threshold;
+  const variant = pickVariant(lt1AmPoolForLevel(level ?? 'intermediate'), weekIndex);
+  const work = variant.build(weeklyKm);
+  return {
+    id: nextId(date), date, type: 'lt1_threshold',
+    title: `${c.title} — ${variant.label}`,
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 5) * 1000),
+    totalDurationSeconds: 60 * 60, rpe: 6,
+    purpose: c.purpose + ' Structure : ' + variant.structure + '.',
+    feel: variant.feelHint,
+    guidance: [...c.guidance, ...variant.approachTips],
+    steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2500, pace: 'easy', note: 'CD' }],
+  };
+}
+
 export function buildVo2Max({ date, weeklyKm, weekIndex, locale, level }: BuildArgs): Workout {
   const c = copy(locale).vo2max;
   const variant = pickVariant(vo2PoolForLevel(level ?? 'intermediate'), weekIndex);

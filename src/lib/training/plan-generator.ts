@@ -28,6 +28,7 @@ import {
   buildRest,
   buildShortReps,
   buildSingleThreshold,
+  buildSubThreshold,
   buildStrides,
   buildTrackSpecific,
   buildVo2Max,
@@ -92,7 +93,11 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
             workouts.push(buildLt1AM(base));
             workouts.push(buildLt1PM(base));
           } else if (tSessions >= 1) {
-            workouts.push(buildSingleThreshold(base));
+            // Primary quality day for beginner/intermediate. The Norwegian
+            // signature is sub-threshold (LT1), NOT classical LT2 — so the
+            // main weekly threshold session is LT1. The harder LT2/VO2 work
+            // (intermediate only) lands on day 3.
+            workouts.push(buildSubThreshold(base));
           } else {
             workouts.push(buildEasy(base));
           }
@@ -117,7 +122,11 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
           } else if (sSessions >= 1 && family === 'middle') {
             workouts.push(buildShortReps(base));
           } else {
-            workouts.push(buildHills(base));
+            // Beginner second session: mostly easy aerobic volume (what a
+            // beginner needs most), with hills every 3rd week for strength
+            // and economy. Previously this fell to hills EVERY week, which
+            // was monotonous and crowded out aerobic base-building.
+            workouts.push(w % 3 === 2 ? buildHills(base) : buildEasy(base));
           }
           break;
 
