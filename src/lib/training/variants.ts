@@ -172,7 +172,7 @@ export const LT2_VARIANTS: SessionVariant[] = [
   },
 ];
 
-// ---------- LT1 AM (SV1 sub-threshold) — 9 variants -------------------------
+// ---------- LT1 AM (SV1 sub-threshold) — 15 variants ------------------------
 
 export const LT1_AM_VARIANTS: SessionVariant[] = [
   {
@@ -257,6 +257,67 @@ export const LT1_AM_VARIANTS: SessionVariant[] = [
     approachTips: ["Pour coureurs élite (volume ≥ 100 km/sem) uniquement", "Allure : sous-seuil bas STRICT", "Vérifier régulièrement le lactate si possible", 'Séance signature des Ingebrigtsen'],
     build: (km) => [{ reps: scaleReps(km, 8, 12), distanceMeters: 1000, pace: 'lt1', recoverySeconds: 45 }],
     workKm: (km) => scaleReps(km, 8, 12),
+  },
+  {
+    label: '3×2000 m sous-seuil',
+    structure: 'Trois longues de 2000 m à allure sous-seuil, 90 s récup',
+    feelHint: "Reps longues, presque du tempo fractionné. Le mental compte autant que les jambes.",
+    approachTips: ['Allure : sous-seuil bas, ultra-régulière', 'Découper mentalement chaque 2000 en 2×1000', 'Idéal pour le semi et le 10K'],
+    build: (km) => [{ reps: scaleReps(km, 2, 4), distanceMeters: 2000, pace: 'lt1', recoverySeconds: 90 }],
+    workKm: (km) => scaleReps(km, 2, 4) * 2,
+  },
+  {
+    label: '15×400 m sous-seuil',
+    structure: 'Quinze 400 m à allure sous-seuil, récup 30 s — format « court-court » norvégien',
+    feelHint: "Très rythmé, presque ludique. Le faible temps de récup maintient le lactate stable.",
+    approachTips: ['Allure : sous-seuil haut', 'Récup 30 s en trot — ne pas marcher', 'Le secret : rester relâché, ne pas attaquer chaque 400'],
+    build: (km) => [{ reps: scaleReps(km, 12, 20), distanceMeters: 400, pace: 'lt1', recoverySeconds: 30 }],
+    workKm: (km) => scaleReps(km, 12, 20) * 0.4,
+  },
+  {
+    label: 'Tempo fractionné 2×15 min',
+    structure: 'Deux blocs de 15 min à allure sous-seuil, 3 min récup',
+    feelHint: "Longs blocs continus — la patience est l'épreuve. Pas d'à-coups.",
+    approachTips: ['Allure : sous-seuil bas (≈ 2 mmol/L)', 'Récup 3 min footing lent entre les blocs', "Si vous accélérez sur le 2e bloc, c'est gagné — sinon vous étiez trop vite"],
+    build: () => [
+      { durationSeconds: 15 * 60, pace: 'lt1', note: 'Bloc 1' },
+      { durationSeconds: 3 * 60, pace: 'easy', note: 'Récup' },
+      { durationSeconds: 15 * 60, pace: 'lt1', note: 'Bloc 2' },
+    ],
+    workKm: () => 8,
+  },
+  {
+    label: 'Échelle 1-2-3-2-1 km',
+    structure: 'Pyramide 1000-2000-3000-2000-1000 m à allure sous-seuil, 90 s récup',
+    feelHint: "La 3000 du milieu est le pic mental. Une fois passée, ça redescend.",
+    approachTips: ['Monter progressivement, ne pas exploser sur la 3000', 'Allure constante sur toute la pyramide', 'Excellente pour casser la routine du fractionné classique'],
+    build: () => [
+      { distanceMeters: 1000, pace: 'lt1', recoverySeconds: 90 },
+      { distanceMeters: 2000, pace: 'lt1', recoverySeconds: 90 },
+      { distanceMeters: 3000, pace: 'lt1', recoverySeconds: 90 },
+      { distanceMeters: 2000, pace: 'lt1', recoverySeconds: 90 },
+      { distanceMeters: 1000, pace: 'lt1', recoverySeconds: 0 },
+    ],
+    workKm: () => 9,
+  },
+  {
+    label: '5×(1000 m sous-seuil + 200 m vif)',
+    structure: 'Cinq fois : 1000 m sous-seuil enchaîné à 200 m allure 10K, 90 s récup',
+    feelHint: "Le « float » : on accélère 200 m sans transition après chaque kilomètre. Ça réveille les jambes.",
+    approachTips: ['1000 m en sous-seuil, puis 200 m allure 10K sans pause', 'Récup 90 s après chaque bloc complet', "Travaille la capacité à changer de rythme — clé en compétition"],
+    build: () => [
+      { reps: 5, distanceMeters: 1000, pace: 'lt1', recoverySeconds: 0, note: 'Sous-seuil' },
+      { reps: 5, distanceMeters: 200, pace: 'interval', recoverySeconds: 90, note: 'Float allure 10K' },
+    ],
+    workKm: () => 6,
+  },
+  {
+    label: '7×1000 m sous-seuil',
+    structure: 'Sept 1000 m à allure sous-seuil, récup 60 s',
+    feelHint: "Le volume confortable du sous-seuil. On finit avec la sensation d'en avoir encore.",
+    approachTips: ['Allure : sous-seuil bas, identique de la 1ère à la 7e', 'Récup 60 s en trot', 'La régularité prime sur la vitesse'],
+    build: (km) => [{ reps: scaleReps(km, 6, 9), distanceMeters: 1000, pace: 'lt1', recoverySeconds: 60 }],
+    workKm: (km) => scaleReps(km, 6, 9),
   },
 ];
 
@@ -778,12 +839,16 @@ export const EXTRA_SPEED_VARIANTS: SessionVariant[] = [
 export type RunnerLevelHint = 'beginner' | 'intermediate' | 'advanced' | 'elite';
 
 export function lt2PoolForLevel(level: RunnerLevelHint): SessionVariant[] {
-  if (level === 'beginner') return [...BEGINNER_LT2_VARIANTS, ...LT2_VARIANTS.slice(0, 3)];
+  // 3 gentle beginner sessions + 5 standard = 8 variants, so rotation across
+  // consecutive 4-week blocks never lands on the same session twice.
+  if (level === 'beginner') return [...BEGINNER_LT2_VARIANTS, ...LT2_VARIANTS.slice(0, 5)];
   return LT2_VARIANTS;
 }
 
 export function lt1AmPoolForLevel(level: RunnerLevelHint): SessionVariant[] {
-  if (level === 'beginner') return [...BEGINNER_LT1_VARIANTS, ...LT1_AM_VARIANTS.slice(0, 2)];
+  // 2 gentle beginner sub-threshold sessions + 5 standard = 7 variants. A pool
+  // size coprime-ish with the 4-week block stride keeps the weekly LT1 fresh.
+  if (level === 'beginner') return [...BEGINNER_LT1_VARIANTS, ...LT1_AM_VARIANTS.slice(0, 5)];
   return LT1_AM_VARIANTS;
 }
 
