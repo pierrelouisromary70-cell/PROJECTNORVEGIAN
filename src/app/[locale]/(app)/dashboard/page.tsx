@@ -19,6 +19,7 @@ import {
   type PainLevel,
 } from '@/lib/training/adaptation';
 import type { RunnerProfile, TrainingBlock, Workout } from '@/lib/training/types';
+import { blockAdherenceRatio, nextTrainingBaseline } from '@/lib/training/progression';
 import { WorkoutCard } from '@/components/WorkoutCard';
 import { RacePredictor } from '@/components/RacePredictor';
 import { TodayFeedback } from './TodayFeedback';
@@ -230,9 +231,33 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   if (blockRow && new Date(blockRow.end_date) >= new Date() && !postBreakInfo) {
     block = blockRow.payload as TrainingBlock;
   } else {
+    // Long-term progression: when the previous block has expired (normal flow,
+    // not a post-break ramp), advance the persisted training baseline a little
+    // — gated by how much of that block the runner actually completed — so
+    // volume compounds across months and years instead of forever re-anchoring
+    // on the onboarding number. No upper cap: a 30 km runner can reach 90 km.
+    let baselineKm = Number(profile.current_weekly_km);
+    if (blockRow && !postBreakInfo) {
+      const prevBlock = blockRow.payload as TrainingBlock;
+      const plannedNonRest = prevBlock.weeks
+        .flatMap((wk) => wk.workouts)
+        .filter((wk) => wk.type !== 'rest').length;
+      const { count } = await supabase
+        .from('workout_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('workout_date', blockRow.start_date)
+        .lte('workout_date', blockRow.end_date)
+        .neq('status', 'skipped');
+      const adherence = blockAdherenceRatio(plannedNonRest, count ?? 0);
+      baselineKm = nextTrainingBaseline(baselineKm, adherence);
+      if (baselineKm !== Number(profile.current_weekly_km)) {
+        await supabase.from('profiles').update({ current_weekly_km: baselineKm }).eq('id', user.id);
+      }
+    }
     const runner: RunnerProfile = {
       experienceYears: Number(profile.experience_years),
-      currentWeeklyKm: postBreakInfo ? postBreakInfo.cappedKm : Number(profile.current_weekly_km),
+      currentWeeklyKm: postBreakInfo ? postBreakInfo.cappedKm : baselineKm,
       daysPerWeek: profile.days_per_week,
       hasDoneIntervals: profile.has_done_intervals,
       goal: profile.goal,
