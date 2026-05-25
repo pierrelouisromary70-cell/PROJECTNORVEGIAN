@@ -3,10 +3,11 @@ import { generatePlan } from './plan-generator';
 import {
   marathonLongRunKm,
   raceFamily,
-  raceVolumeFactor,
+  shouldDoubleThreshold,
   speedSessionsPerWeek,
   taperFactor,
   targetWeeklyKmForRace,
+  weeklyVolumeGrowthFactor,
 } from './norwegian';
 import type { RunnerProfile } from './types';
 
@@ -21,32 +22,39 @@ const intermediate: RunnerProfile = {
   trackCycle: false,
 };
 
-describe('Race-aware volume scaling', () => {
-  it('marathon target volume is ~1.75x the 1500m target for the same level', () => {
-    const v1500 = targetWeeklyKmForRace('intermediate', 1500);
-    const vMarathon = targetWeeklyKmForRace('intermediate', 42195);
-    expect(vMarathon / v1500).toBeCloseTo(1.75, 1);
-  });
-
-  it('intermediate × marathon ≈ 140 km/sem (user reference number)', () => {
-    expect(targetWeeklyKmForRace('intermediate', 42195)).toBe(140);
-  });
-
-  it('intermediate × 1500m ≈ 80 km/sem (user reference number)', () => {
-    expect(targetWeeklyKmForRace('intermediate', 1500)).toBe(80);
-  });
-
-  it('beginner × marathon < advanced × 5K', () => {
-    const begM = targetWeeklyKmForRace('beginner', 42195);
-    const adv5 = targetWeeklyKmForRace('advanced', 5000);
-    expect(begM).toBeLessThan(adv5);
-  });
-
-  it('raceVolumeFactor is monotonically increasing', () => {
-    const families = ['middle', 'short', 'medium', 'long', 'marathon'] as const;
-    for (let i = 1; i < families.length; i++) {
-      expect(raceVolumeFactor(families[i])).toBeGreaterThanOrEqual(raceVolumeFactor(families[i - 1]));
+describe('Volume target is anchored on current volume', () => {
+  it('target is a modest step up from current — never close to ×2', () => {
+    for (const cur of [25, 35, 55, 80, 100, 130, 150]) {
+      const t = targetWeeklyKmForRace(cur, 42195); // marathon = biggest emphasis
+      expect(t).toBeGreaterThanOrEqual(cur);
+      expect(t).toBeLessThanOrEqual(Math.round(cur * 1.3)); // hard +30% ceiling
     }
+  });
+
+  it('a 70 km and a 150 km runner are NOT given the same target', () => {
+    expect(targetWeeklyKmForRace(70)).not.toBe(targetWeeklyKmForRace(150));
+  });
+
+  it('lower-mileage runners may grow proportionally more than high-mileage ones', () => {
+    expect(weeklyVolumeGrowthFactor(35)).toBeGreaterThan(weeklyVolumeGrowthFactor(150));
+  });
+
+  it('marathon target ≥ 1500m target for the same runner (more aerobic emphasis)', () => {
+    const cur = 80;
+    expect(targetWeeklyKmForRace(cur, 42195)).toBeGreaterThanOrEqual(targetWeeklyKmForRace(cur, 1500));
+  });
+});
+
+describe('Double-threshold gating', () => {
+  it('requires at least 100 km/week', () => {
+    expect(shouldDoubleThreshold('elite', 90)).toBe(false);
+    expect(shouldDoubleThreshold('elite', 100)).toBe(true);
+    expect(shouldDoubleThreshold('advanced', 120)).toBe(true);
+  });
+
+  it('high volume alone is not enough without training maturity', () => {
+    expect(shouldDoubleThreshold('beginner', 120)).toBe(false);
+    expect(shouldDoubleThreshold('intermediate', 120)).toBe(false);
   });
 });
 

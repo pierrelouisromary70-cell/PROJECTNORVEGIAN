@@ -51,14 +51,31 @@ export function suggestNextWeeklyKm(currentKm: number, target: number, weekIndex
   return Math.min(Math.round(currentKm * progressFactor), target);
 }
 
-/** Base weekly volume target for a runner level, normalised on the 5K. */
-export function targetWeeklyKmForLevel(level: ExperienceLevel): number {
-  switch (level) {
-    case 'beginner': return 50;
-    case 'intermediate': return 80;
-    case 'advanced': return 120;
-    case 'elite': return 170;
-  }
+/**
+ * Safe weekly-volume growth factor, in 15 fine-grained bands. The volume a
+ * training block ramps toward is the runner's CURRENT volume × this factor, so
+ * the target always sits close to where they already are — never ×2, the
+ * classic injury trap (a 70 km runner and a 150 km runner must not share a
+ * single "advanced" target). Lower-mileage runners have more proportional room
+ * to grow; high-mileage runners are near their ceiling and creep up slowly.
+ */
+export function weeklyVolumeGrowthFactor(currentWeeklyKm: number): number {
+  const km = currentWeeklyKm;
+  if (km < 30) return 1.22;
+  if (km < 40) return 1.20;
+  if (km < 50) return 1.18;
+  if (km < 60) return 1.16;
+  if (km < 70) return 1.15;
+  if (km < 80) return 1.13;
+  if (km < 90) return 1.12;
+  if (km < 100) return 1.11;
+  if (km < 110) return 1.10;
+  if (km < 120) return 1.09;
+  if (km < 130) return 1.08;
+  if (km < 140) return 1.07;
+  if (km < 150) return 1.06;
+  if (km < 160) return 1.05;
+  return 1.04;
 }
 
 // =====================================================================
@@ -75,20 +92,22 @@ export function raceFamily(distanceMeters: number): RaceFamily {
   return 'marathon';
 }
 
-export function raceVolumeFactor(family: RaceFamily): number {
-  switch (family) {
-    case 'middle': return 1.0;
-    case 'short':  return 1.05;
-    case 'medium': return 1.15;
-    case 'long':   return 1.40;
-    case 'marathon': return 1.75;
+/**
+ * The weekly-volume target a training block ramps toward — anchored on the
+ * runner's CURRENT volume, never a fixed aspirational number. Longer races add
+ * a small aerobic-volume nudge, but a hard +30 % ceiling guarantees the target
+ * can never approach ×2 of current (which would push the +8 %/week ramp into
+ * injury territory).
+ */
+export function targetWeeklyKmForRace(currentWeeklyKm: number, raceDistanceMeters?: number): number {
+  let factor = weeklyVolumeGrowthFactor(currentWeeklyKm);
+  if (raceDistanceMeters !== undefined) {
+    const family = raceFamily(raceDistanceMeters);
+    if (family === 'long') factor += 0.03;
+    else if (family === 'marathon') factor += 0.06;
   }
-}
-
-export function targetWeeklyKmForRace(level: ExperienceLevel, raceDistanceMeters?: number): number {
-  const base = targetWeeklyKmForLevel(level);
-  if (raceDistanceMeters === undefined) return base;
-  return Math.round(base * raceVolumeFactor(raceFamily(raceDistanceMeters)));
+  factor = Math.min(factor, 1.30); // hard safety ceiling: never more than +30% of current
+  return Math.round(currentWeeklyKm * factor);
 }
 
 export function thresholdSessionsPerWeek(level: ExperienceLevel, phase: TrainingPhase, family?: RaceFamily): number {
@@ -118,8 +137,13 @@ export function speedSessionsPerWeek(family: RaceFamily, phase: TrainingPhase): 
   }
 }
 
-export function shouldDoubleThreshold(level: ExperienceLevel): boolean {
-  return level === 'advanced' || level === 'elite';
+/**
+ * Double-threshold (two threshold sessions in one day) is a high-volume tool.
+ * Below ~100 km/week a runner lacks the aerobic base to absorb it without
+ * courting injury, so we gate on volume first and training maturity second.
+ */
+export function shouldDoubleThreshold(level: ExperienceLevel, currentWeeklyKm: number): boolean {
+  return currentWeeklyKm >= 100 && (level === 'advanced' || level === 'elite');
 }
 
 export type RacePriority = 'A' | 'B' | 'C';

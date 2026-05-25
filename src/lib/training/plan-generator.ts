@@ -50,7 +50,7 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
   const weeksCount = args.weeks ?? 4;
   const level = inferExperience(profile);
   const family: RaceFamily | undefined = raceDistanceMeters !== undefined ? raceFamily(raceDistanceMeters) : undefined;
-  const target = targetWeeklyKmForRace(level, raceDistanceMeters);
+  const target = targetWeeklyKmForRace(profile.currentWeeklyKm, raceDistanceMeters);
   const start = startOfWeek(startDate, { weekStartsOn: 1 });
 
   const weeks: TrainingWeek[] = [];
@@ -69,7 +69,7 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
     currentKm = suggestNextWeeklyKm(currentKm, target, w);
     const tSessions = thresholdSessionsPerWeek(level, phase, family);
     const sSessions = family ? speedSessionsPerWeek(family, phase) : (phase === 'build' ? 1 : 0);
-    const doubles = shouldDoubleThreshold(level) && phase !== 'taper' && phase !== 'recovery' && family !== 'middle';
+    const doubles = shouldDoubleThreshold(level, profile.currentWeeklyKm) && phase !== 'taper' && phase !== 'recovery' && family !== 'middle';
 
     let weekScale = 1.0;
     if (phase === 'taper') weekScale = taperFactor(racePriority);

@@ -146,8 +146,15 @@ describe('Variant rotation in workout builders', () => {
 
 describe('Plan generator — variant rotation across weeks', () => {
   it('A 4-week semi-marathon block uses at least 3 different LT1 AM structures', () => {
+    // LT1 AM sessions only exist on double-threshold days, which require a
+    // high-volume runner (>=100 km/week), so use an advanced profile here.
+    const doubleThresholdRunner: RunnerProfile = {
+      ...intermediate,
+      experienceYears: 4,
+      currentWeeklyKm: 110,
+    };
     const block = generatePlan({
-      profile: intermediate,
+      profile: doubleThresholdRunner,
       startDate: new Date('2026-06-01'),
       raceDate: new Date('2026-08-01'),
       raceDistanceMeters: 21097,
