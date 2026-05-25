@@ -397,7 +397,7 @@ export const LT1_PM_VARIANTS: SessionVariant[] = [
   },
 ];
 
-// ---------- VO2max variants — 5 variants ------------------------------------
+// ---------- VO2max variants — 9 variants ------------------------------------
 
 export const VO2_VARIANTS: SessionVariant[] = [
   {
@@ -445,6 +445,49 @@ export const VO2_VARIANTS: SessionVariant[] = [
     approachTips: ['Allure : 3 sec/km plus rapide que VO2max classique', 'Récupération active en trot', 'Idéal pour réveiller la puissance'],
     build: (km) => [{ reps: scaleReps(km, 8, 12), distanceMeters: 400, pace: 'interval', recoverySeconds: 90 }],
     workKm: (km) => scaleReps(km, 8, 12) * 0.4,
+  },
+  {
+    label: 'Billat 30/30',
+    structure: 'Vingt fractions de 30 s à VO2max / 30 s en footing — la séance de Véronique Billat',
+    feelHint: "Format court-court : le 30 s d'effort passe vite, mais le cumul brûle. Le grand classique du développement de VO2max.",
+    approachTips: ['Allure : 100 % VMA (allure 3K environ)', 'Récup 30 s en footing lent, pas marche', 'Si vous tenez les 20, vous pouviez aller un poil plus vite', 'Excellente sur piste ou route plate'],
+    build: (km) => [{ reps: scaleReps(km, 16, 24), durationSeconds: 30, pace: 'interval', recoverySeconds: 30 }],
+    workKm: (km) => scaleReps(km, 16, 24) * 0.13,
+  },
+  {
+    label: '3×(1000 + 500) m',
+    structure: 'Trois blocs : 1000 m allure 5K + 500 m allure 3K enchaînés, 3 min récup',
+    feelHint: "Le 500 final de chaque bloc, plus rapide, vous apprend à accélérer fatigué.",
+    approachTips: ['1000 m allure 5K, puis 500 m allure 3K sans pause', 'Récup 3 min entre les blocs', 'Le 500 doit être nettement plus rapide que le 1000'],
+    build: () => [
+      { distanceMeters: 1000, pace: 'interval', recoverySeconds: 0, note: 'Allure 5K' },
+      { distanceMeters: 500, pace: 'interval', recoverySeconds: 180, note: 'Allure 3K' },
+      { distanceMeters: 1000, pace: 'interval', recoverySeconds: 0, note: 'Allure 5K' },
+      { distanceMeters: 500, pace: 'interval', recoverySeconds: 180, note: 'Allure 3K' },
+      { distanceMeters: 1000, pace: 'interval', recoverySeconds: 0, note: 'Allure 5K' },
+      { distanceMeters: 500, pace: 'interval', recoverySeconds: 0, note: 'Allure 3K' },
+    ],
+    workKm: () => 4.5,
+  },
+  {
+    label: '8×500 m VO2max',
+    structure: 'Huit 500 m à allure VO2max, 90 s récup',
+    feelHint: "Format intermédiaire entre le 400 piquant et le 1000 long. Bon compromis qualité/volume.",
+    approachTips: ['Allure : 3K-5K cible', 'Récup 90 s en trot', 'Garder la même allure de la 1ère à la 8e'],
+    build: (km) => [{ reps: scaleReps(km, 6, 10), distanceMeters: 500, pace: 'interval', recoverySeconds: 90 }],
+    workKm: (km) => scaleReps(km, 6, 10) * 0.5,
+  },
+  {
+    label: '2×(6×300 m)',
+    structure: 'Deux séries de six 300 m à allure 3K, 45 s récup / 3 min entre séries',
+    feelHint: "Très rythmé, format piste. La 2e série démarre déjà fatigué — c'est l'objectif.",
+    approachTips: ['Allure : 3K, voire un peu plus vite', 'Récup 45 s dans la série, 3 min entre les 2 séries', 'Idéal pour la vitesse spécifique 1500-3000m'],
+    build: () => [
+      { reps: 6, distanceMeters: 300, pace: 'interval', recoverySeconds: 45, note: 'Série 1' },
+      { durationSeconds: 3 * 60, pace: 'easy', note: 'Récup 3 min' },
+      { reps: 6, distanceMeters: 300, pace: 'interval', recoverySeconds: 45, note: 'Série 2' },
+    ],
+    workKm: () => 3.6,
   },
 ];
 
@@ -803,6 +846,49 @@ export const EXTRA_HILL_VARIANTS: SessionVariant[] = [
       { reps: 6, distanceMeters: 200, pace: 'lt2', recoverySeconds: 120, note: 'À plat' },
     ],
     workKm: () => 2.5,
+  },
+  {
+    label: 'Sprints en côte 12×20 s',
+    structure: 'Douze sprints courts de 20 s en côte raide (8-10 %), récupération complète',
+    feelHint: "Explosif et court. Pas de fatigue métabolique — pur recrutement neuromusculaire et force.",
+    approachTips: ["Pente raide (8-10 %)", "Effort quasi maximal mais relâché — pas de crispation", "Redescente en marche, récupération complète (~2 min)", "Idéal en début de phase build pour poser la force"],
+    build: (km) => [{ reps: scaleReps(km, 10, 16), durationSeconds: 20, pace: 'repetition', recoverySeconds: 120, note: 'Sprint en côte' }],
+    workKm: (km) => scaleReps(km, 10, 16) * 0.1,
+  },
+  {
+    label: 'Côtes moyennes 8×1 min',
+    structure: 'Huit montées de 1 min sur pente 5-7 %, retour en trot',
+    feelHint: "Le format « bread and butter » des côtes : assez long pour le cardio, assez court pour rester puissant.",
+    approachTips: ["Effort soutenu (RPE 8), cadence rapide", "Récup en redescendant en trot", "Garder la même intensité de la 1ère à la 8e", "Polyvalent : convient à toutes les distances"],
+    build: (km) => [{ reps: scaleReps(km, 6, 10), durationSeconds: 60, pace: 'interval', recoverySeconds: 120, note: 'En montée' }],
+    workKm: (km) => scaleReps(km, 6, 10) * 0.3,
+  },
+  {
+    label: 'Côtes longues 5×90 s',
+    structure: 'Cinq montées de 90 s sur pente modérée 4-6 %, récup en descente',
+    feelHint: "Force-endurance. Le dernier tiers de chaque montée tire fort sur les fessiers et mollets.",
+    approachTips: ["Allure : seuil haut à VO2max", "Pente modérée mais longue", "Récup complète en descente (~2-3 min)", "Excellent pour le trail et le marathon vallonné"],
+    build: (km) => [{ reps: scaleReps(km, 4, 7), durationSeconds: 90, pace: 'interval', recoverySeconds: 150, note: 'En montée' }],
+    workKm: (km) => scaleReps(km, 4, 7) * 0.45,
+  },
+  {
+    label: 'Pyramide de côtes 30-45-60-45-30 s ×2',
+    structure: 'Échelle de durée en montée, deux blocs, récup en descente',
+    feelHint: "Varie le stimulus : explosif sur les courtes, force-endurance sur les longues. Engageant mentalement.",
+    approachTips: ["Plus la montée est courte, plus c'est rapide", "Récup en redescendant tranquillement", "3 min de footing plat entre les 2 blocs"],
+    build: () => [
+      { durationSeconds: 30, pace: 'repetition', recoverySeconds: 60 },
+      { durationSeconds: 45, pace: 'interval', recoverySeconds: 75 },
+      { durationSeconds: 60, pace: 'interval', recoverySeconds: 90 },
+      { durationSeconds: 45, pace: 'interval', recoverySeconds: 75 },
+      { durationSeconds: 30, pace: 'repetition', recoverySeconds: 180, note: 'Récup 3 min entre blocs' },
+      { durationSeconds: 30, pace: 'repetition', recoverySeconds: 60 },
+      { durationSeconds: 45, pace: 'interval', recoverySeconds: 75 },
+      { durationSeconds: 60, pace: 'interval', recoverySeconds: 90 },
+      { durationSeconds: 45, pace: 'interval', recoverySeconds: 75 },
+      { durationSeconds: 30, pace: 'repetition', recoverySeconds: 0 },
+    ],
+    workKm: () => 3,
   },
 ];
 
