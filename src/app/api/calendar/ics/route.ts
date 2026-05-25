@@ -10,7 +10,7 @@ import type { TrainingBlock, Workout } from '@/lib/training/types';
  * event on its scheduled date.
  */
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response('unauthorized', { status: 401 });
 
