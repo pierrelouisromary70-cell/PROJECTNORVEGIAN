@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { computeVdot, RACE_PRESETS } from './calculator';
 import { interpolateVdot } from './table';
 import { buildPaceZones, formatPace } from './paces';
+import { predictRaceTimes } from './predictor';
 
 describe('VDOT calculator', () => {
   it('returns ~50 for a 20:00 5K (textbook reference)', () => {
@@ -26,6 +27,14 @@ describe('VDOT calculator', () => {
     const slow = computeVdot({ distanceMeters: 10000, timeSeconds: 60 * 60 });
     const fast = computeVdot({ distanceMeters: 10000, timeSeconds: 35 * 60 });
     expect(fast).toBeGreaterThan(slow);
+  });
+
+  it('round-trips: VDOT from a race predicts that same race time back', () => {
+    // 10K in 34:44 — the case that previously produced a faster 33:49 prediction.
+    const v = computeVdot({ distanceMeters: 10000, timeSeconds: 2084 });
+    const predicted = predictRaceTimes(v).find((p) => p.distanceMeters === 10000)!;
+    // Within 15 s (interpolation rounding), the predicted 10K matches the input.
+    expect(Math.abs(predicted.timeSeconds - 2084)).toBeLessThanOrEqual(15);
   });
 });
 

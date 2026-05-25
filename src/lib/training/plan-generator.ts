@@ -169,7 +169,7 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
     if (easyRuns.length > 0 && currentEasyKm > 0 && targetEasyKm > 0) {
       const scale = targetEasyKm / currentEasyKm;
       for (const wk of easyRuns) {
-        const km = Math.max(4, Math.round((wk.totalDistanceMeters / 1000) * scale));
+        const km = Math.max(3, Math.round((wk.totalDistanceMeters / 1000) * scale));
         wk.totalDistanceMeters = km * 1000;
         wk.totalDurationSeconds = km * 330;
         wk.steps = [{ distanceMeters: km * 1000, pace: 'easy' }];

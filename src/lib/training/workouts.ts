@@ -138,12 +138,12 @@ export function buildLt1AM({ date, weeklyKm, weekIndex, locale, level }: BuildAr
   return {
     id: nextId(date, '-am'), date, type: 'lt1_threshold',
     title: `${c.title} — AM — ${variant.label}`,
-    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 4) * 1000),
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 60 * 60, rpe: 6, isDouble: true, amPm: 'AM',
     purpose: c.purpose + ' Structure : ' + variant.structure + '.',
     feel: variant.feelHint,
     guidance: [...c.guidance, ...variant.approachTips],
-    steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+    steps: [{ distanceMeters: 4000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
   };
 }
 
@@ -154,12 +154,12 @@ export function buildLt1PM({ date, weeklyKm, weekIndex, locale }: BuildArgs): Wo
   return {
     id: nextId(date, '-pm'), date, type: 'lt1_threshold',
     title: `${c.title} — PM — ${variant.label}`,
-    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 4) * 1000),
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 50 * 60, rpe: 7, isDouble: true, amPm: 'PM',
     purpose: c.purpose + ' Structure : ' + variant.structure + '.',
     feel: variant.feelHint,
     guidance: [...c.guidance, ...variant.approachTips],
-    steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+    steps: [{ distanceMeters: 4000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
   };
 }
 
@@ -170,12 +170,12 @@ export function buildSingleThreshold({ date, weeklyKm, weekIndex, locale, level 
   return {
     id: nextId(date), date, type: 'lt2_threshold',
     title: `${c.title} — ${variant.label}`,
-    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 5) * 1000),
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 60 * 60, rpe: 7,
     purpose: c.purpose + ' Structure : ' + variant.structure + '.',
     feel: variant.feelHint,
     guidance: [...c.guidance, ...variant.approachTips],
-    steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2500, pace: 'easy', note: 'CD' }],
+    steps: [{ distanceMeters: 4000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2500, pace: 'easy', note: 'CD' }],
   };
 }
 
@@ -193,12 +193,12 @@ export function buildSubThreshold({ date, weeklyKm, weekIndex, locale, level }: 
   return {
     id: nextId(date), date, type: 'lt1_threshold',
     title: `${c.title} — ${variant.label}`,
-    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 5) * 1000),
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 60 * 60, rpe: 6,
     purpose: c.purpose + ' Structure : ' + variant.structure + '.',
     feel: variant.feelHint,
     guidance: [...c.guidance, ...variant.approachTips],
-    steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2500, pace: 'easy', note: 'CD' }],
+    steps: [{ distanceMeters: 4000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2500, pace: 'easy', note: 'CD' }],
   };
 }
 
@@ -209,12 +209,12 @@ export function buildVo2Max({ date, weeklyKm, weekIndex, locale, level }: BuildA
   return {
     id: nextId(date), date, type: 'vo2max',
     title: `${c.title} — ${variant.label}`,
-    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 4.5) * 1000),
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 55 * 60, rpe: 8.5,
     purpose: c.purpose + ' Structure : ' + variant.structure + '.',
     feel: variant.feelHint,
     guidance: [...c.guidance, ...variant.approachTips],
-    steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+    steps: [{ distanceMeters: 4000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
   };
 }
 
@@ -225,12 +225,12 @@ export function buildHills({ date, weeklyKm, weekIndex, locale, level }: BuildAr
   return {
     id: nextId(date), date, type: 'hills',
     title: `${c.title} — ${variant.label}`,
-    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 4) * 1000),
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 45 * 60, rpe: 7,
     purpose: c.purpose + ' Structure : ' + variant.structure + '.',
     feel: variant.feelHint,
     guidance: [...c.guidance, ...variant.approachTips],
-    steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+    steps: [{ distanceMeters: 4000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
   };
 }
 
@@ -240,12 +240,12 @@ export function buildSpeed({ date, weeklyKm, weekIndex, locale, level }: BuildAr
   return {
     id: nextId(date), date, type: 'vo2max',
     title: `Vitesse — ${variant.label}`,
-    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 4) * 1000),
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 45 * 60, rpe: 8,
     purpose: 'Vitesse pure et tolérance lactique. Structure : ' + variant.structure + '.',
     feel: variant.feelHint,
     guidance: variant.approachTips,
-    steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+    steps: [{ distanceMeters: 4000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
   };
 }
 
@@ -293,12 +293,12 @@ export function buildRacePace({ date, locale }: BuildArgs, raceDistanceMeters: n
   else pace = 'marathon';
   return {
     id: nextId(date), date, type: 'race_pace', title: c.title,
-    totalDistanceMeters: reps * repDist + 4000, totalDurationSeconds: 65 * 60,
+    totalDistanceMeters: reps * repDist + 6000, totalDurationSeconds: 65 * 60,
     rpe: raceDistanceMeters <= 10000 ? 8 : 7,
     purpose: c.purpose + ' Préparation finale ciblée sur votre course objectif.',
     feel: c.feel,
     guidance: [...c.guidance, extraNote, 'Hydratation et nutrition de course'],
-    steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, { reps, distanceMeters: repDist, pace, recoverySeconds: recovery }, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+    steps: [{ distanceMeters: 4000, pace: 'easy', note: 'WU' }, { reps, distanceMeters: repDist, pace, recoverySeconds: recovery }, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
   };
 }
 
@@ -326,7 +326,7 @@ export function buildShortReps({ date, locale }: BuildArgs): Workout {
     purpose: 'Vitesse pure et tolérance lactique. Spécifique 1500-3000m.',
     feel: 'Court, vif, propre.',
     guidance: ['10×200m récup 1 min, ou 8×400m récup 90 s', 'Sur piste si possible'],
-    steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, { reps: 10, distanceMeters: 200, pace: 'repetition', recoverySeconds: 60 }, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+    steps: [{ distanceMeters: 4000, pace: 'easy', note: 'WU' }, { reps: 10, distanceMeters: 200, pace: 'repetition', recoverySeconds: 60 }, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
   };
 }
 
@@ -339,7 +339,7 @@ export function buildTrackSpecific({ date, locale }: BuildArgs): Workout {
     feel: "Très exigeant.",
     guidance: ['4×800m @ allure 3K récup 2 min', 'puis 4×200m @ allure 1500m récup 1 min'],
     steps: [
-      { distanceMeters: 2500, pace: 'easy', note: 'WU' },
+      { distanceMeters: 4000, pace: 'easy', note: 'WU' },
       { reps: 4, distanceMeters: 800, pace: 'interval', recoverySeconds: 120, note: 'Allure 3K' },
       { reps: 4, distanceMeters: 200, pace: 'repetition', recoverySeconds: 60, note: 'Allure 1500m' },
       { distanceMeters: 2000, pace: 'easy', note: 'CD' },
@@ -379,12 +379,12 @@ export function buildMixed({ date, weeklyKm, weekIndex, locale }: BuildArgs): Wo
   return {
     id: nextId(date), date, type: 'lt2_threshold',
     title: `Séance combo — ${variant.label}`,
-    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 4.5) * 1000),
+    totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 70 * 60, rpe: 7.5,
     purpose: "Séance mixte — combine deux stimuli physiologiques pour casser la routine et travailler plusieurs systèmes. " + variant.structure + '.',
     feel: variant.feelHint,
     guidance: variant.approachTips,
-    steps: [{ distanceMeters: 2500, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+    steps: [{ distanceMeters: 4000, pace: 'easy', note: 'WU' }, ...work, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
   };
 }
 
