@@ -85,6 +85,27 @@ describe('Norwegian plan generator', () => {
     expect(tueA?.title).not.toBe(tueB?.title);
   });
 
+  it('ramps quality reps across the training cycle (start lighter, peak mid-block)', () => {
+    const runner: RunnerProfile = {
+      ...baseProfile,
+      experienceYears: 5,
+      currentWeeklyKm: 70,
+      hasDoneIntervals: true,
+      vdot: 55,
+    };
+    const b = generatePlan({ profile: runner, startDate: new Date('2026-06-01') });
+    const QUALITY = ['lt1_threshold', 'lt2_threshold', 'vo2max', 'hills'];
+    const hasNote = (week: (typeof b.weeks)[number], frag: string) =>
+      week.workouts.some(
+        (w) => QUALITY.includes(w.type) && w.guidance.some((g) => g.includes(frag)),
+      );
+
+    // Week 0 = first build week of the micro-cycle → loaded below peak.
+    expect(hasNote(b.weeks[0], 'montée en charge')).toBe(true);
+    // Week 2 = peak → full reps, no build-up note.
+    expect(hasNote(b.weeks[2], 'montée en charge')).toBe(false);
+  });
+
   it('weekly volume tracks the progressive target regardless of variant drawn', () => {
     const b = generatePlan({ profile: baseProfile, startDate: new Date('2026-06-01') });
     // Non-recovery weeks (0,1,2) should not collapse far below the declared

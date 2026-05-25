@@ -154,6 +154,19 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
       }
     }
 
+    // Progressive overload across the training cycle: quality sessions start
+    // the 4-week micro-cycle ~2 reps below their peak and ramp up week by week,
+    // deloading on the 4th week. Same session, heavier as the block
+    // progresses — sound periodisation, and a natural source of variety. The
+    // easy-run buffer below keeps weekly volume on target, so this modulates
+    // the QUALITY load, not the kilometrage.
+    const prog = loadRepProgression(w, phase, locale);
+    if (prog.delta !== 0) {
+      for (let i = 0; i < workouts.length; i++) {
+        workouts[i] = applyRepProgression(workouts[i], prog.delta, prog.note);
+      }
+    }
+
     // Make easy runs the volume buffer: scale them so the week sums to the
     // target phaseKm regardless of which quality variant was drawn. Without
     // this, picking a high-volume threshold variant (e.g. 12×1000) vs a short
@@ -226,6 +239,76 @@ function buildSaturdayLongRun({ base, family, phase, phaseKm, weeksToRace }: Lon
     if (wi % 3 === 2) return buildProgressive(base);
   }
   return buildLong(base);
+}
+
+// Quality session types whose rep count rides the cycle's loading curve.
+// Easy/long/strides/race-pace are deliberately excluded: easy/long carry the
+// volume buffer, and race-pace must stay sharp and precise near the goal.
+const PROGRESSION_TYPES: ReadonlySet<string> = new Set([
+  'lt1_threshold',
+  'lt2_threshold',
+  'vo2max',
+  'hills',
+]);
+
+/**
+ * Loading position within the 4-week micro-cycle. Returns the rep delta to
+ * apply to quality sessions plus a runner-facing note explaining the week's
+ * place in the progression. Build weeks ramp -2 → -1 → 0 (peak); the 4th week
+ * (and any recovery/taper phase) deloads at -2.
+ */
+function loadRepProgression(
+  weekInBlock: number,
+  phase: TrainingPhase,
+  locale?: Locale,
+): { delta: number; note: string } {
+  const en = locale === 'en';
+  const deloadNote = en
+    ? 'Deload week: quality reps trimmed to absorb the previous weeks of loading.'
+    : "Semaine d'assimilation : répétitions de qualité réduites pour absorber la charge des semaines précédentes.";
+
+  if (phase === 'recovery' || phase === 'taper') return { delta: -2, note: deloadNote };
+
+  const pos = weekInBlock % 4;
+  if (pos === 3) return { delta: -2, note: deloadNote };
+
+  const delta = -2 + pos; // pos 0 → -2, 1 → -1, 2 → 0 (peak load)
+  if (delta === 0) return { delta: 0, note: '' };
+
+  const fewer = -delta;
+  const note = en
+    ? `Build-up week: ${fewer} rep${fewer > 1 ? 's' : ''} below this session's cycle peak — the load steps up next week.`
+    : `Semaine de montée en charge : ${fewer} répétition${fewer > 1 ? 's' : ''} de moins que le pic du cycle — la charge augmente la semaine prochaine.`;
+  return { delta, note };
+}
+
+/**
+ * Apply the cycle rep delta to a single quality workout: adjust the rep count
+ * on interval-style steps (never below 3, and only on steps that already have
+ * more than 3 reps so short race-pace blocks stay intact), then keep the
+ * totals consistent with the new work volume.
+ */
+function applyRepProgression(w: Workout, delta: number, note: string): Workout {
+  if (delta === 0 || !PROGRESSION_TYPES.has(w.type)) return w;
+  let distanceDelta = 0;
+  const steps = w.steps.map((s) => {
+    if (s.reps && s.reps > 3 && s.distanceMeters) {
+      const newReps = Math.max(3, s.reps + delta);
+      distanceDelta += (newReps - s.reps) * s.distanceMeters;
+      return { ...s, reps: newReps };
+    }
+    return s;
+  });
+  if (distanceDelta === 0) return w;
+  const newTotal = Math.max(0, w.totalDistanceMeters + distanceDelta);
+  const ratio = w.totalDistanceMeters > 0 ? newTotal / w.totalDistanceMeters : 1;
+  return {
+    ...w,
+    steps,
+    totalDistanceMeters: newTotal,
+    totalDurationSeconds: Math.round(w.totalDurationSeconds * ratio),
+    guidance: note ? [note, ...w.guidance] : w.guidance,
+  };
 }
 
 function computePhase(weekIndex: number, total: number, raceDate?: Date, weekStart?: Date, priority: RacePriority = 'A'): TrainingPhase {
