@@ -9,7 +9,7 @@ const bodySchema = z.object({
 }).default({ locale: 'fr', plan: 'monthly' });
 
 export async function POST(req: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 

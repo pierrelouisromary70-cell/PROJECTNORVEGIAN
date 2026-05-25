@@ -34,7 +34,7 @@ function hashIp(ip: string | null): string | null {
 }
 
 export async function POST(req: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
   // audit-grade consent row (timestamp + user-agent + hashed IP). Without
   // this we can't prove informed consent on a CNIL request.
   if (d.trackCycle) {
-    const h = headers();
+    const h = await headers();
     const ua = h.get('user-agent');
     const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip');
     await supabase.from('consent_logs').insert({

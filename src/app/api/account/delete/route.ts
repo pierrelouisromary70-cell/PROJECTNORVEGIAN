@@ -7,7 +7,7 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js';
  * Triggered from the profile page. RGPD Article 17 ("right to be forgotten").
  */
 export async function POST() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 

@@ -14,7 +14,7 @@ function adminClient() {
 }
 
 export async function POST(req: Request) {
-  const sig = headers().get('stripe-signature');
+  const sig = (await headers()).get('stripe-signature');
   if (!sig) return NextResponse.json({ error: 'no signature' }, { status: 400 });
   const body = await req.text();
 

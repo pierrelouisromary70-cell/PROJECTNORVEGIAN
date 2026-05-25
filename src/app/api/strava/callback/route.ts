@@ -50,7 +50,7 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${appUrl}/fr/profile?strava=invalid`);
   }
 
-  const cookieState = cookies().get(STATE_COOKIE)?.value;
+  const cookieState = (await cookies()).get(STATE_COOKIE)?.value;
   const secret = process.env.STRAVA_OAUTH_STATE_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
   const clientId = process.env.STRAVA_CLIENT_ID;
   const clientSecret = process.env.STRAVA_CLIENT_SECRET;
@@ -94,6 +94,6 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${appUrl}/fr/profile?strava=db_failed`);
   }
 
-  cookies().delete(STATE_COOKIE);
+  (await cookies()).delete(STATE_COOKIE);
   return NextResponse.redirect(`${appUrl}/fr/profile?strava=connected`);
 }

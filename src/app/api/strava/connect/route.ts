@@ -18,7 +18,7 @@ function signState(payload: string, secret: string): string {
 }
 
 export async function GET(req: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
 
   // Pin the signed state into an HttpOnly cookie too — defense in depth
   // against an attacker who steals the URL in flight.
-  cookies().set(STATE_COOKIE, state, {
+  (await cookies()).set(STATE_COOKIE, state, {
     httpOnly: true,
     secure: appUrl.startsWith('https://'),
     sameSite: 'lax',

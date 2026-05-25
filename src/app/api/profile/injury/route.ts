@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server';
  * POST { action: 'resume_normal' }           → clears both flags, back to normal
  */
 export async function POST(req: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
