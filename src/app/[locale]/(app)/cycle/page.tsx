@@ -4,8 +4,14 @@ import { CycleClient } from './CycleClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CyclePage({ params: { locale } }: { params: { locale: string } }) {
-  const supabase = createClient();
+export default async function CyclePage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
+
+  const {
+    locale
+  } = params;
+
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
   const { data: profile } = await supabase.from('profiles').select('track_cycle, sex').eq('id', user.id).maybeSingle();

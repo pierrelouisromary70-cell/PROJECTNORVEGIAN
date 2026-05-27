@@ -1,9 +1,15 @@
 'use client';
-import { useState } from 'react';
+import { useState, use } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
-export default function ForgotPasswordPage({ params: { locale } }: { params: { locale: string } }) {
+export default function ForgotPasswordPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -6,12 +6,19 @@ import { WorkoutRunner } from './WorkoutRunner';
 
 export const dynamic = 'force-dynamic';
 
-export default async function WorkoutRunnerPage({
-  params: { locale, id },
-}: {
-  params: { locale: string; id: string };
-}) {
-  const supabase = createClient();
+export default async function WorkoutRunnerPage(
+  props: {
+    params: Promise<{ locale: string; id: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    locale,
+    id
+  } = params;
+
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
 

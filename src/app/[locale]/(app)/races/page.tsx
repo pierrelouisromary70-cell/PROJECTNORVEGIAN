@@ -4,8 +4,14 @@ import { RacesClient } from './RacesClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function RacesPage({ params: { locale } }: { params: { locale: string } }) {
-  const supabase = createClient();
+export default async function RacesPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
+
+  const {
+    locale
+  } = params;
+
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
   const [{ data: races }, { data: profile }] = await Promise.all([

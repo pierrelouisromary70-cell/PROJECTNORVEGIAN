@@ -5,7 +5,13 @@ import type { RunnerProfile } from '@/lib/training/types';
 import { WorkoutCard } from '@/components/WorkoutCard';
 import { RacePredictor } from '@/components/RacePredictor';
 
-export default function DemoPage({ params: { locale } }: { params: { locale: string } }) {
+export default async function DemoPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
+
+  const {
+    locale
+  } = params;
+
   setRequestLocale(locale);
   const profile: RunnerProfile = {
     experienceYears: 3,

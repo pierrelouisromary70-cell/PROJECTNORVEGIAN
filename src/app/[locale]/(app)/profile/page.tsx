@@ -6,14 +6,20 @@ import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ProfilePage({
-  params: { locale },
-  searchParams,
-}: {
-  params: { locale: string };
-  searchParams?: { strava?: string };
-}) {
-  const supabase = createClient();
+export default async function ProfilePage(
+  props: {
+    params: Promise<{ locale: string }>;
+    searchParams?: Promise<{ strava?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    locale
+  } = params;
+
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
   const [{ data: profile }, { data: sub }, { data: strava }] = await Promise.all([
