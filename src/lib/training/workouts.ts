@@ -30,6 +30,21 @@ function pickVariant<T extends SessionVariant>(variants: T[], weekIndex: number 
   return variants[i];
 }
 
+/**
+ * When a variant label is a plain "N×D m" count, show the runner's ACTUAL rep
+ * count (scaled to their weekly volume) rather than the nominal max-volume
+ * figure — so the session-card title always matches the breakdown below it.
+ * Descriptive labels (pyramid, tempo, fartlek, combos) are left untouched.
+ */
+function labelForWork(label: string, work: { reps?: number }[]): string {
+  // Only when the session is ONE uniform rep block (distance- or time-based)
+  // do we rewrite the count; multi-block structures (pyramids, combos) keep
+  // their descriptive label. Replace the first "<n>×" with the real rep count.
+  const block = work.length === 1 && work[0].reps && work[0].reps > 1 ? work[0] : null;
+  if (!block) return label;
+  return label.replace(/\d+×/, `${block.reps}×`);
+}
+
 const FR = {
   easy: {
     title: 'Footing facile',
@@ -137,7 +152,7 @@ export function buildLt1AM({ date, weeklyKm, weekIndex, locale, level }: BuildAr
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date, '-am'), date, type: 'lt1_threshold',
-    title: `${c.title} — AM — ${variant.label}`,
+    title: `${c.title} — AM — ${labelForWork(variant.label, work)}`,
     totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 60 * 60, rpe: 6, isDouble: true, amPm: 'AM',
     purpose: c.purpose + ' Structure : ' + variant.structure + '.',
@@ -153,7 +168,7 @@ export function buildLt1PM({ date, weeklyKm, weekIndex, locale }: BuildArgs): Wo
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date, '-pm'), date, type: 'lt1_threshold',
-    title: `${c.title} — PM — ${variant.label}`,
+    title: `${c.title} — PM — ${labelForWork(variant.label, work)}`,
     totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 50 * 60, rpe: 7, isDouble: true, amPm: 'PM',
     purpose: c.purpose + ' Structure : ' + variant.structure + '.',
@@ -169,7 +184,7 @@ export function buildSingleThreshold({ date, weeklyKm, weekIndex, locale, level 
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date), date, type: 'lt2_threshold',
-    title: `${c.title} — ${variant.label}`,
+    title: `${c.title} — ${labelForWork(variant.label, work)}`,
     totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 60 * 60, rpe: 7,
     purpose: c.purpose + ' Structure : ' + variant.structure + '.',
@@ -192,7 +207,7 @@ export function buildSubThreshold({ date, weeklyKm, weekIndex, locale, level }: 
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date), date, type: 'lt1_threshold',
-    title: `${c.title} — ${variant.label}`,
+    title: `${c.title} — ${labelForWork(variant.label, work)}`,
     totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 60 * 60, rpe: 6,
     purpose: c.purpose + ' Structure : ' + variant.structure + '.',
@@ -208,7 +223,7 @@ export function buildVo2Max({ date, weeklyKm, weekIndex, locale, level }: BuildA
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date), date, type: 'vo2max',
-    title: `${c.title} — ${variant.label}`,
+    title: `${c.title} — ${labelForWork(variant.label, work)}`,
     totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 55 * 60, rpe: 8.5,
     purpose: c.purpose + ' Structure : ' + variant.structure + '.',
@@ -224,7 +239,7 @@ export function buildHills({ date, weeklyKm, weekIndex, locale, level }: BuildAr
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date), date, type: 'hills',
-    title: `${c.title} — ${variant.label}`,
+    title: `${c.title} — ${labelForWork(variant.label, work)}`,
     totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 45 * 60, rpe: 7,
     purpose: c.purpose + ' Structure : ' + variant.structure + '.',
@@ -239,7 +254,7 @@ export function buildSpeed({ date, weeklyKm, weekIndex, locale, level }: BuildAr
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date), date, type: 'vo2max',
-    title: `Vitesse — ${variant.label}`,
+    title: `Vitesse — ${labelForWork(variant.label, work)}`,
     totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 45 * 60, rpe: 8,
     purpose: 'Vitesse pure et tolérance lactique. Structure : ' + variant.structure + '.',
@@ -378,7 +393,7 @@ export function buildMixed({ date, weeklyKm, weekIndex, locale }: BuildArgs): Wo
   const work = variant.build(weeklyKm);
   return {
     id: nextId(date), date, type: 'lt2_threshold',
-    title: `Séance combo — ${variant.label}`,
+    title: `Séance combo — ${labelForWork(variant.label, work)}`,
     totalDistanceMeters: Math.round((variant.workKm(weeklyKm) + 6) * 1000),
     totalDurationSeconds: 70 * 60, rpe: 7.5,
     purpose: "Séance mixte — combine deux stimuli physiologiques pour casser la routine et travailler plusieurs systèmes. " + variant.structure + '.',

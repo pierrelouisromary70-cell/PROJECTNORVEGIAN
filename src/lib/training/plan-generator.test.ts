@@ -106,6 +106,26 @@ describe('Norwegian plan generator', () => {
     expect(hasNote(b.weeks[2], 'montée en charge')).toBe(false);
   });
 
+  it('session titles always match the breakdown (no "10×600" title over a "7×600" detail)', () => {
+    for (const km of [30, 55, 80, 110, 150]) {
+      const runner: RunnerProfile = { ...baseProfile, experienceYears: 5, currentWeeklyKm: km, hasDoneIntervals: true, vdot: 55 };
+      for (const start of ['2026-06-01', '2026-06-29']) {
+        const b = generatePlan({ profile: runner, startDate: new Date(start), weeks: 4, locale: 'fr', raceDate: new Date('2026-10-01'), raceDistanceMeters: 21097 });
+        for (const wk of b.weeks) {
+          for (const w of wk.workouts) {
+            for (const tok of w.title.matchAll(/(\d+)×(\d+)\s*m(?!in)\b/g)) {
+              const reps = Number(tok[1]);
+              const dist = Number(tok[2]);
+              const matches = w.steps.some((s) => s.reps === reps && s.distanceMeters === dist)
+                || w.steps.filter((s) => s.distanceMeters === dist).length === reps;
+              expect(matches, `title "${w.title}" claims ${reps}×${dist}m but steps don't`).toBe(true);
+            }
+          }
+        }
+      }
+    }
+  });
+
   it('weekly volume tracks the progressive target regardless of variant drawn', () => {
     const b = generatePlan({ profile: baseProfile, startDate: new Date('2026-06-01') });
     // Non-recovery weeks (0,1,2) should not collapse far below the declared

@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { baselineAdvanceFactor, blockAdherenceRatio, nextTrainingBaseline } from './progression';
 
 describe('Long-term volume progression', () => {
-  it('a consistent 30 km runner climbs toward ~90 km over ~3 years', () => {
+  it('a consistent 30 km runner climbs to a healthy ~70-80 km over ~3 years', () => {
     let km = 30;
     const blocksPerYear = 13; // 4-week mesocycles
     for (let i = 0; i < blocksPerYear * 3; i++) {
       km = nextTrainingBaseline(km, 0.8); // good adherence every block
     }
-    expect(km).toBeGreaterThan(80);
-    expect(km).toBeLessThan(140); // sustainable, not a runaway ramp
+    expect(km).toBeGreaterThan(60); // real, visible multi-year progression
+    expect(km).toBeLessThan(95); // sustainable, not a runaway ramp
   });
 
   it('never caps volume — sustained training keeps it growing even at high mileage', () => {

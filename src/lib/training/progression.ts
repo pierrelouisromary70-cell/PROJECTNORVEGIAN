@@ -3,9 +3,10 @@
 // The per-BLOCK target (norwegian.ts) shapes a single 4-week mesocycle: ramp
 // the runner up to ~+20% then deload. This module handles the BETWEEN-block
 // creep: each completed block nudges the persisted baseline up a little, so a
-// 30 km/week runner can reach ~90 km over a few years. Crucially the rate only
-// *slows* as mileage rises — it is never clamped to a fixed ceiling, so volume
-// keeps growing across months and years.
+// 30 km/week runner climbs to ~70-75 km over a few years (≈ +30-40 %/year at
+// low volume, tapering toward +10 %/year at high volume). Crucially the rate
+// only *slows* as mileage rises — it is never clamped to a fixed ceiling, so
+// volume keeps growing across months and years, just sustainably.
 
 /**
  * Per-block baseline growth factor. Lower-mileage runners add proportionally
@@ -14,14 +15,14 @@
  */
 export function baselineAdvanceFactor(currentWeeklyKm: number): number {
   const km = currentWeeklyKm;
-  if (km < 40) return 1.045;
-  if (km < 55) return 1.04;
-  if (km < 70) return 1.035;
-  if (km < 85) return 1.03;
-  if (km < 100) return 1.025;
-  if (km < 120) return 1.02;
-  if (km < 150) return 1.015;
-  return 1.01;
+  if (km < 40) return 1.028;
+  if (km < 55) return 1.024;
+  if (km < 70) return 1.02;
+  if (km < 85) return 1.017;
+  if (km < 100) return 1.014;
+  if (km < 120) return 1.011;
+  if (km < 150) return 1.009;
+  return 1.006;
 }
 
 /**

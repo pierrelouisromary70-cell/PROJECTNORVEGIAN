@@ -291,11 +291,16 @@ function loadRepProgression(
 function applyRepProgression(w: Workout, delta: number, note: string): Workout {
   if (delta === 0 || !PROGRESSION_TYPES.has(w.type)) return w;
   let distanceDelta = 0;
+  let title = w.title;
   const steps = w.steps.map((s) => {
     if (s.reps && s.reps > 3 && s.distanceMeters) {
       const newReps = Math.max(3, s.reps + delta);
-      distanceDelta += (newReps - s.reps) * s.distanceMeters;
-      return { ...s, reps: newReps };
+      if (newReps !== s.reps) {
+        distanceDelta += (newReps - s.reps) * s.distanceMeters;
+        // Keep the card title in sync with the breakdown: "9×600 m" -> "7×600 m".
+        title = title.replace(`${s.reps}×${s.distanceMeters} m`, `${newReps}×${s.distanceMeters} m`);
+        return { ...s, reps: newReps };
+      }
     }
     return s;
   });
@@ -304,6 +309,7 @@ function applyRepProgression(w: Workout, delta: number, note: string): Workout {
   const ratio = w.totalDistanceMeters > 0 ? newTotal / w.totalDistanceMeters : 1;
   return {
     ...w,
+    title,
     steps,
     totalDistanceMeters: newTotal,
     totalDurationSeconds: Math.round(w.totalDurationSeconds * ratio),
