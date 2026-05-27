@@ -1,7 +1,13 @@
 import { setRequestLocale } from 'next-intl/server';
 import Link from 'next/link';
 
-export default function TermsPage({ params: { locale } }: { params: { locale: string } }) {
+export default async function TermsPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
+
+  const {
+    locale
+  } = params;
+
   setRequestLocale(locale);
   return (
     <main className="min-h-screen bg-white text-ink-950">
