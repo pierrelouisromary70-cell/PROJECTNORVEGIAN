@@ -7,7 +7,13 @@ export const metadata = {
   description: 'LT1, LT2, VO2max, allure facile — comment reconnaître chaque zone à la sensation, sans cardio ni lactate.',
 };
 
-export default function ZonesPage({ params: { locale } }: { params: { locale: string } }) {
+export default async function ZonesPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
+
+  const {
+    locale
+  } = params;
+
   setRequestLocale(locale);
   return (
     <main className="min-h-screen bg-white text-ink-950">

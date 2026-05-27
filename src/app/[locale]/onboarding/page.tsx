@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { computeVdot, RACE_PRESETS } from '@/lib/vdot/calculator';
@@ -9,7 +9,13 @@ import { inferExperience } from '@/lib/training/norwegian';
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
-export default function OnboardingPage({ params: { locale } }: { params: { locale: string } }) {
+export default function OnboardingPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
   const t = useTranslations('onboarding');
   const tCycle = useTranslations('cycle');
   const c = useTranslations('common');
