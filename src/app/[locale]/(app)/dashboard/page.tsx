@@ -29,9 +29,15 @@ import { EndBreakButton } from './BreakStateControls';
 
 export const dynamic = 'force-dynamic';
 
-export default async function DashboardPage({ params: { locale } }: { params: { locale: string } }) {
+export default async function DashboardPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
+
+  const {
+    locale
+  } = params;
+
   const t = await getTranslations({ locale, namespace: 'common' });
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
 
