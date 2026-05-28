@@ -23,7 +23,10 @@ export async function POST() {
 
   const { error } = await admin.auth.admin.deleteUser(user.id);
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Don't surface Supabase's raw message to the client — it can leak
+    // schema or RLS hints. Log it server-side instead.
+    console.error('account_delete_failed', { uid: user.id, message: error.message });
+    return NextResponse.json({ error: 'deletion_failed' }, { status: 500 });
   }
 
   await supabase.auth.signOut();

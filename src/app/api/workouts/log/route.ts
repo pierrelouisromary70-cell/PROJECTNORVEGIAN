@@ -43,7 +43,10 @@ export async function POST(req: Request) {
       logged_at: new Date().toISOString(),
     }, { onConflict: 'user_id,workout_id' });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('workout_log_upsert_failed', { uid: user.id, message: error.message });
+    return NextResponse.json({ error: 'log_failed' }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
 
@@ -68,6 +71,9 @@ export async function DELETE(req: Request) {
     .eq('user_id', user.id)
     .eq('workout_id', body.workoutId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('workout_log_delete_failed', { uid: user.id, message: error.message });
+    return NextResponse.json({ error: 'log_delete_failed' }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
