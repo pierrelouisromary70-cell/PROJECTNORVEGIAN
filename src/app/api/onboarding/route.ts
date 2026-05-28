@@ -75,7 +75,8 @@ export async function POST(req: Request) {
     updated_at: new Date().toISOString(),
   });
   if (profileErr) {
-    return NextResponse.json({ error: 'profile_save_failed', detail: profileErr.message }, { status: 500 });
+    console.error('onboarding_profile_save_failed', { uid: user.id, message: profileErr.message });
+    return NextResponse.json({ error: 'profile_save_failed' }, { status: 500 });
   }
 
   await supabase.from('race_results').insert({
