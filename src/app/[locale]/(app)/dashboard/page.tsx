@@ -294,6 +294,51 @@ export default async function DashboardPage(props: { params: Promise<{ locale: s
   const plannedToday: Workout[] = block.weeks.flatMap((w) => w.workouts).filter((w) => w.date === today);
   const upcoming: Workout[] = block.weeks.flatMap((w) => w.workouts).filter((w) => w.date > today).slice(0, 4);
 
+  // Snapshot of the runner's current training week: phase, km done vs planned,
+  // session count, and a 7-day status strip. Sits at the top of the dashboard
+  // for daily-glance value (the #1 retention driver: "where am I this week?").
+  // Reuses the already-loaded logByWorkoutId map — no extra DB round-trip.
+  const tPhases = await getTranslations({ locale, namespace: 'phases' });
+  const weekSnapshot = (() => {
+    const todayDate = new Date(today);
+    const wk = block.weeks.find((w) => {
+      const s = new Date(w.startDate);
+      const e = new Date(s.getTime() + 6 * 86400000);
+      return todayDate >= s && todayDate <= e;
+    });
+    if (!wk) return null;
+    const labels = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+    const start = new Date(wk.startDate).getTime();
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = format(new Date(start + i * 86400000), 'yyyy-MM-dd');
+      const dayWorkouts = wk.workouts.filter((w) => w.date === d);
+      const isRest = dayWorkouts.length > 0 && dayWorkouts.every((w) => w.type === 'rest');
+      const statuses = dayWorkouts.map((w) => logByWorkoutId.get(w.id));
+      const allDone = !isRest && dayWorkouts.length > 0 && statuses.every((s) => s === 'done' || s === 'replaced' || s === 'partial');
+      const anySkipped = statuses.includes('skipped');
+      return { label: labels[i], isToday: d === today, isPast: d < today, isRest, allDone, anySkipped };
+    });
+    const nonRest = wk.workouts.filter((w) => w.type !== 'rest');
+    const sessionsDone = nonRest.filter((w) => {
+      const s = logByWorkoutId.get(w.id);
+      return s === 'done' || s === 'replaced' || s === 'partial';
+    }).length;
+    const kmDone = Math.round(nonRest.reduce((sum, w) => {
+      const s = logByWorkoutId.get(w.id);
+      return (s === 'done' || s === 'replaced' || s === 'partial') ? sum + w.totalDistanceMeters / 1000 : sum;
+    }, 0));
+    return {
+      weekNum: wk.weekNumber,
+      totalWeeks: block.weeks.length,
+      phase: wk.phase,
+      days,
+      sessionsDone,
+      sessionsTotal: nonRest.length,
+      kmDone,
+      kmPlanned: wk.totalKm,
+    };
+  })();
+
   // --- Today's adaptation (the engine in `adaptation.ts` is finally wired up here) ---
   // Pull today's daily_log + latest cycle phase, then transform planned-today
   // workouts before render so the runner sees the actually-recommended session
@@ -384,6 +429,49 @@ export default async function DashboardPage(props: { params: Promise<{ locale: s
         <p className="text-sm text-ink-600">{format(new Date(), 'EEEE dd MMMM')}</p>
         <h1 className="display text-4xl md:text-5xl text-ink-950">{t('today')}</h1>
       </header>
+
+      {weekSnapshot && (
+        <section className="card relative overflow-hidden">
+          <div aria-hidden className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-aurora-300/20 blur-3xl" />
+          <div className="relative">
+            <div className="flex items-start justify-between mb-5 flex-wrap gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wider text-aurora-700 font-semibold">
+                  Semaine {weekSnapshot.weekNum} sur {weekSnapshot.totalWeeks} · {tPhases(weekSnapshot.phase)}
+                </p>
+                <h2 className="font-display text-xl text-ink-950 mt-1">Ta semaine en un coup d&apos;œil</h2>
+              </div>
+              <div className="text-right">
+                <div className="font-display text-2xl font-bold text-ink-950 tabular-nums">
+                  {weekSnapshot.kmDone}<span className="text-ink-400"> / {weekSnapshot.kmPlanned}</span> <span className="text-sm font-normal text-ink-500">km</span>
+                </div>
+                <div className="text-xs text-ink-600 mt-0.5">{weekSnapshot.sessionsDone} / {weekSnapshot.sessionsTotal} séances faites</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-7 gap-1.5">
+              {weekSnapshot.days.map((d, i) => {
+                let cls = 'bg-ink-50 text-ink-400';
+                if (d.allDone) cls = 'bg-aurora-500 text-white';
+                else if (d.anySkipped) cls = 'bg-red-100 text-red-700';
+                else if (d.isRest) cls = 'bg-ink-100 text-ink-500';
+                else if (d.isPast) cls = 'bg-ink-100 text-ink-500';
+                const ring = d.isToday ? ' ring-2 ring-aurora-600 ring-offset-2' : '';
+                return (
+                  <div key={i} className={`h-12 rounded-lg ${cls}${ring} flex items-center justify-center text-sm font-semibold`}>
+                    {d.label}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 h-1.5 rounded-full bg-ink-100 overflow-hidden">
+              <div
+                className="h-full bg-aurora-500 transition-all"
+                style={{ width: `${Math.min(100, Math.round((weekSnapshot.kmDone / Math.max(1, weekSnapshot.kmPlanned)) * 100))}%` }}
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
       <TodayFeedback
         locale={locale}
