@@ -112,6 +112,14 @@ export default function OnboardingPage(props: { params: Promise<{ locale: string
 
         {step === 1 && (
           <section className="space-y-4">
+            <div className="rounded-xl bg-aurora-50 border border-aurora-200 px-4 py-3 text-sm text-aurora-900">
+              <p className="font-semibold">En ~2 minutes :</p>
+              <ol className="mt-1 list-decimal pl-5 space-y-0.5 text-aurora-800">
+                <li>on calibre votre VDOT depuis une performance récente</li>
+                <li>on génère votre premier plan personnalisé</li>
+                <li>vous démarrez votre essai gratuit de 14 jours</li>
+              </ol>
+            </div>
             <h2 className="font-semibold">{t('step1')}</h2>
             <div>
               <label className="label">Sexe</label>

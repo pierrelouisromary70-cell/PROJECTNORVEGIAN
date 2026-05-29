@@ -31,8 +31,12 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
   };
 
   return (
-    <main className="min-h-screen grid place-items-center px-6">
+    <main className="min-h-screen grid place-items-center px-6 py-10 bg-[radial-gradient(50%_50%_at_50%_0%,theme(colors.aurora.50)_0%,transparent_70%)]">
       <form onSubmit={submit} className="card w-full max-w-sm space-y-4">
+        <Link href={`/${locale}`} className="flex items-center gap-2 font-display font-bold text-lg text-ink-950">
+          <span className="h-2 w-2 rounded-full bg-aurora-500" />
+          Nordic Run
+        </Link>
         <h1 className="text-2xl font-bold text-ink-950">{c('signIn')}</h1>
         <div>
           <label className="label" htmlFor="email">Email</label>
@@ -45,7 +49,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <button className="btn-primary w-full" disabled={loading}>{loading ? c('loading') : c('signIn')}</button>
         <div className="flex justify-between text-sm text-ink-700">
-          <Link href={`/${locale}/signup`} className="underline">{c('signUp')}</Link>
+          <Link href={`/${locale}/signup`} className="underline">Pas encore inscrit ?</Link>
           <Link href={`/${locale}/forgot-password`} className="underline">Mot de passe oublié ?</Link>
         </div>
       </form>
