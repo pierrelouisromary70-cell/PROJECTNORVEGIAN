@@ -76,22 +76,69 @@ function Hero({ locale, t }: { locale: string; t: ReturnType<typeof useTranslati
             <Link href="#method" className="btn-secondary text-base px-7 py-3.5">
               {t('ctaSecondary')}
             </Link>
-            <Link href={`/${locale}/zones`} className="btn-ghost text-base px-7 py-3.5">
-              Comprendre les zones d&apos;allure
-            </Link>
           </div>
+          <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-600">
+            <li className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-aurora-600" /> Sans carte de crédit</li>
+            <li className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-aurora-600" /> Annulation en 1 clic</li>
+            <li className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-aurora-600" /> Données RGPD (UE)</li>
+            <li className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-aurora-600" /> Strava lecture seule</li>
+          </ul>
           <p className="mt-4 text-sm text-ink-500">{t('ctaNote')}</p>
         </div>
-        <div className="hidden md:flex justify-end">
-          <img
-            src="/runner-silhouette.svg"
-            alt=""
-            aria-hidden
-            className="h-[520px] w-auto opacity-95 drop-shadow-[0_25px_50px_rgba(15,23,42,0.15)]"
-          />
-        </div>
+        <SessionPreview />
       </div>
     </section>
+  );
+}
+
+function SessionPreview() {
+  return (
+    <div className="relative mx-auto w-full max-w-md">
+      <div aria-hidden className="absolute -inset-6 bg-gradient-to-br from-aurora-300/40 via-aurora-100/30 to-transparent rounded-3xl blur-2xl" />
+      <div className="relative rounded-2xl bg-white ring-1 ring-ink-100 shadow-2xl shadow-aurora-900/10 overflow-hidden">
+        <div className="px-5 pt-5 pb-4 flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-wider text-aurora-700 font-semibold">Aujourd&apos;hui · Mardi</p>
+            <h3 className="font-display text-xl text-ink-950 mt-1">Seuil bas (LT1) — 5×1 000 m</h3>
+          </div>
+          <span className="chip bg-aurora-100 text-aurora-800 text-xs font-semibold shrink-0">RPE 6/10</span>
+        </div>
+        <div className="px-5 grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-xl bg-ink-50 py-2">
+            <p className="text-[11px] text-ink-600">Distance</p>
+            <p className="font-semibold text-ink-950 text-sm">10,2 km</p>
+          </div>
+          <div className="rounded-xl bg-ink-50 py-2">
+            <p className="text-[11px] text-ink-600">Durée</p>
+            <p className="font-semibold text-ink-950 text-sm">~60 min</p>
+          </div>
+          <div className="rounded-xl bg-ink-50 py-2">
+            <p className="text-[11px] text-ink-600">Phase</p>
+            <p className="font-semibold text-ink-950 text-sm">Base</p>
+          </div>
+        </div>
+        <ol className="mt-4 px-5 pb-4 space-y-2 text-sm">
+          <li className="flex items-center gap-3">
+            <span className="h-6 w-6 rounded-full bg-ink-100 text-ink-700 text-xs grid place-items-center font-semibold">1</span>
+            <span className="flex-1"><span className="text-ink-900 font-medium">Échauffement</span> · 4 km easy</span>
+            <span className="text-ink-500 text-xs tabular-nums">4&apos;40/km</span>
+          </li>
+          <li className="flex items-center gap-3">
+            <span className="h-6 w-6 rounded-full bg-aurora-100 text-aurora-800 text-xs grid place-items-center font-semibold">2</span>
+            <span className="flex-1"><span className="text-ink-900 font-medium">5 × 1 000 m</span> · récup 60 s</span>
+            <span className="text-aurora-700 text-xs font-semibold tabular-nums">3&apos;40/km</span>
+          </li>
+          <li className="flex items-center gap-3">
+            <span className="h-6 w-6 rounded-full bg-ink-100 text-ink-700 text-xs grid place-items-center font-semibold">3</span>
+            <span className="flex-1"><span className="text-ink-900 font-medium">Retour au calme</span> · 2 km easy</span>
+            <span className="text-ink-500 text-xs tabular-nums">4&apos;40/km</span>
+          </li>
+        </ol>
+        <div className="px-5 py-3 bg-ink-50/70 border-t border-ink-100 text-xs text-ink-700">
+          <span className="font-semibold text-ink-900">Pourquoi : </span>accumuler du temps sous le seuil sans creuser de fatigue (sous-seuil norvégien).
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -222,7 +269,7 @@ function Pricing({ locale, t }: { locale: string; t: ReturnType<typeof useTransl
           <div className="relative">
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold text-aurora-400 uppercase tracking-wider">{t('priceAnnual')}</div>
-              <span className="chip bg-aurora-500 text-ink-950 text-xs font-bold">{t('save')} 33 %</span>
+              <span className="chip bg-aurora-500 text-ink-950 text-xs font-bold">{t('save')} 60 € / an</span>
             </div>
             <div className="mt-4 flex items-baseline gap-1">
               <span className="font-display text-5xl font-bold">10 €</span>
