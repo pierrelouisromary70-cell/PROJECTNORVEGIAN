@@ -187,6 +187,9 @@ export default function OnboardingPage(props: { params: Promise<{ locale: string
             <div className="rounded-xl bg-ink-50 p-4">
               <div className="text-xs uppercase text-ink-600">{t('computedVdot')}</div>
               <div className="text-3xl font-bold text-ink-900">{vdot || '—'}</div>
+              <p className="text-xs text-ink-600 mt-2 leading-relaxed">
+                Le VDOT est un chiffre qui résume votre capacité aérobie. Indicatif : ~35 = débutant motivé, ~50 = bon amateur, ~65+ = élite. Toutes vos allures (easy, seuil, VO2max) sont calculées à partir de lui.
+              </p>
             </div>
             {vdot > 0 && (
               <div>

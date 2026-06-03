@@ -2,7 +2,7 @@ import { use } from "react";
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
-import { ArrowRight, Check, FlaskConical, HeartPulse, LineChart, Timer, X } from 'lucide-react';
+import { ArrowRight, Check, Clock, FlaskConical, HeartPulse, LineChart, Sparkles, Target, Timer, TrendingUp, X } from 'lucide-react';
 
 export default function LandingPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
@@ -21,6 +21,7 @@ export default function LandingPage(props: { params: Promise<{ locale: string }>
       <Hero locale={locale} t={t} />
       <Stats t={t} />
       <Method t={t} />
+      <PourQui t={t} />
       <Comparison t={t} />
       <Pricing locale={locale} t={t} />
       <Faq t={t} />
@@ -99,7 +100,7 @@ function SessionPreview() {
         <div className="px-5 pt-5 pb-4 flex items-start justify-between">
           <div>
             <p className="text-xs uppercase tracking-wider text-aurora-700 font-semibold">Aujourd&apos;hui · Mardi</p>
-            <h3 className="font-display text-xl text-ink-950 mt-1">Seuil bas (LT1) — 5×1 000 m</h3>
+            <h3 className="font-display text-xl text-ink-950 mt-1">Sous-seuil (LT1) — 5×1 000 m</h3>
           </div>
           <span className="chip bg-aurora-100 text-aurora-800 text-xs font-semibold shrink-0">RPE 6/10</span>
         </div>
@@ -189,6 +190,37 @@ function MethodCard({ icon, eyebrow, title, body }: { icon: React.ReactNode; eye
       <h3 className="font-display text-2xl mt-6 leading-tight">{title}</h3>
       <p className="mt-3 text-ink-700 leading-relaxed">{body}</p>
     </div>
+  );
+}
+
+function PourQui({ t }: { t: ReturnType<typeof useTranslations<'landing'>> }) {
+  const personas = [
+    { icon: <TrendingUp className="h-5 w-5" />, title: t('who1Title'), body: t('who1Body') },
+    { icon: <Target className="h-5 w-5" />, title: t('who2Title'), body: t('who2Body') },
+    { icon: <Sparkles className="h-5 w-5" />, title: t('who3Title'), body: t('who3Body') },
+    { icon: <Clock className="h-5 w-5" />, title: t('who4Title'), body: t('who4Body') },
+  ];
+  return (
+    <section className="border-y border-aurora-100 bg-gradient-to-b from-aurora-50/60 to-white">
+      <div className="max-w-6xl mx-auto px-6 py-20">
+        <div className="max-w-2xl">
+          <span className="eyebrow">{t('whoEyebrow')}</span>
+          <h2 className="display text-4xl md:text-5xl mt-3">{t('whoTitle')}</h2>
+          <p className="mt-6 text-lg text-ink-700 leading-relaxed">{t('whoIntro')}</p>
+        </div>
+        <div className="mt-12 grid md:grid-cols-2 gap-4">
+          {personas.map((p) => (
+            <div key={p.title} className="card flex items-start gap-4">
+              <div className="h-10 w-10 shrink-0 rounded-xl bg-aurora-100 text-aurora-700 grid place-items-center">{p.icon}</div>
+              <div>
+                <h3 className="font-display text-lg text-ink-950">{p.title}</h3>
+                <p className="mt-1 text-ink-700 leading-relaxed">{p.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
