@@ -11,11 +11,23 @@ import { WorkoutLogControls, type WorkoutLogStatus } from './WorkoutLogControls'
 // Map RPE (1-10) → tailwind border + chip tints. RPE is the most honest one-glance
 // signal of how hard a session will feel; coloring the rail lets the runner scan
 // a week of cards and instantly read the polarisation.
-function intensityTint(rpe: number): { rail: string; chip: string; dot: string } {
-  if (rpe <= 0) return { rail: 'border-l-ink-200', chip: 'bg-ink-100 text-ink-700', dot: 'bg-ink-400' };
-  if (rpe <= 3) return { rail: 'border-l-aurora-500', chip: 'bg-aurora-50 text-aurora-800', dot: 'bg-aurora-500' };
-  if (rpe <= 6) return { rail: 'border-l-amber-400', chip: 'bg-amber-50 text-amber-800', dot: 'bg-amber-400' };
-  return { rail: 'border-l-rose-500', chip: 'bg-rose-50 text-rose-800', dot: 'bg-rose-500' };
+function intensityTint(rpe: number): { rail: string; chip: string; dot: string; seg: string } {
+  if (rpe <= 0) return { rail: 'border-l-ink-200', chip: 'bg-ink-100 text-ink-700', dot: 'bg-ink-400', seg: 'bg-ink-400' };
+  if (rpe <= 3) return { rail: 'border-l-aurora-500', chip: 'bg-aurora-50 text-aurora-800', dot: 'bg-aurora-500', seg: 'bg-aurora-500' };
+  if (rpe <= 6) return { rail: 'border-l-amber-400', chip: 'bg-amber-50 text-amber-800', dot: 'bg-amber-400', seg: 'bg-amber-400' };
+  return { rail: 'border-l-rose-500', chip: 'bg-rose-50 text-rose-800', dot: 'bg-rose-500', seg: 'bg-rose-500' };
+}
+
+/** Compact 5-segment intensity bar; each segment covers 2 RPE points. */
+function RpeBar({ rpe, segCls }: { rpe: number; segCls: string }) {
+  const filled = Math.max(0, Math.min(5, Math.ceil(rpe / 2)));
+  return (
+    <span className="inline-flex items-center gap-0.5 ml-1" aria-hidden>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} className={`h-1.5 w-1.5 rounded-sm ${i < filled ? segCls : 'bg-ink-200/60'}`} />
+      ))}
+    </span>
+  );
 }
 
 export interface WorkoutCardProps {
@@ -52,7 +64,7 @@ export function WorkoutCard({ workout, vdot, compact = false, withLogControls = 
             <div className="text-sm text-fjord-700">{formatDistance(workout.totalDistanceMeters)} · {formatDuration(workout.totalDurationSeconds)}</div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className={`chip ${tint.chip}`}><Gauge className="h-3 w-3" /> RPE {workout.rpe || '—'}</span>
+            <span className={`chip ${tint.chip}`}><Gauge className="h-3 w-3" /> RPE {workout.rpe || '—'}<RpeBar rpe={workout.rpe} segCls={tint.seg} /></span>
             {hasDetail && (
               <ChevronDown className={`h-4 w-4 text-ink-400 transition-transform ${open ? 'rotate-180' : ''}`} />
             )}
@@ -87,7 +99,7 @@ export function WorkoutCard({ workout, vdot, compact = false, withLogControls = 
         <div className="flex flex-wrap gap-3 mt-3 text-sm">
           <span className="chip"><MapPin className="h-3 w-3" /> {formatDistance(workout.totalDistanceMeters)}</span>
           <span className="chip">{formatDuration(workout.totalDurationSeconds)}</span>
-          <span className={`chip ${tint.chip}`}><Flame className="h-3 w-3" /> RPE {workout.rpe}/10</span>
+          <span className={`chip ${tint.chip}`}><Flame className="h-3 w-3" /> RPE {workout.rpe}/10<RpeBar rpe={workout.rpe} segCls={tint.seg} /></span>
         </div>
       </header>
 

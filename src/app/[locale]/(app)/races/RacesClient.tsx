@@ -93,9 +93,37 @@ export function RacesClient({ userId, currentVdot, initial }: { userId: string; 
     router.refresh();
   }
 
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const nextA = races
+    .filter((r) => r.priority === 'A' && new Date(r.race_date) >= today)
+    .sort((a, b) => a.race_date.localeCompare(b.race_date))[0];
+  const daysToA = nextA ? Math.ceil((new Date(nextA.race_date).getTime() - today.getTime()) / 86400000) : null;
+
   return (
     <div className="space-y-6">
       <h1 className="display text-4xl md:text-5xl text-ink-950">Mes courses</h1>
+
+      {nextA && daysToA !== null && (
+        <section className="rounded-2xl bg-gradient-to-br from-aurora-700 via-aurora-800 to-ink-950 text-white p-6 relative overflow-hidden">
+          <div aria-hidden className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-aurora-400/30 blur-3xl" />
+          <div aria-hidden className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-aurora-600/20 blur-3xl" />
+          <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-aurora-300 font-semibold">Course principale</p>
+              <h2 className="font-display text-2xl md:text-3xl text-white mt-1">{nextA.name}</h2>
+              <p className="text-sm text-aurora-100 mt-1">{(nextA.distance_meters / 1000).toFixed(1)} km · {new Date(nextA.race_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            </div>
+            <div className="text-left md:text-right">
+              <div className="flex items-baseline gap-2 md:justify-end">
+                <span className="font-display text-5xl md:text-6xl font-bold text-aurora-300 tabular-nums leading-none">
+                  {daysToA === 0 ? "C'est aujourd'hui !" : `J−${daysToA}`}
+                </span>
+              </div>
+              {daysToA > 0 && <p className="text-xs text-aurora-100 mt-1">jour{daysToA > 1 ? 's' : ''} jusqu&apos;à la course</p>}
+            </div>
+          </div>
+        </section>
+      )}
 
       <form onSubmit={add} className="card space-y-3">
         <h2 className="font-semibold text-ink-900">Ajouter une course</h2>

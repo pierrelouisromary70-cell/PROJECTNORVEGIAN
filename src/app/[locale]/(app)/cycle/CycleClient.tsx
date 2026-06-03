@@ -3,7 +3,49 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
-import { inferCyclePhase } from '@/lib/training/adaptation';
+import { inferCyclePhase, type CyclePhase } from '@/lib/training/adaptation';
+
+const PHASES: { key: CyclePhase; label: string; short: string; color: string }[] = [
+  { key: 'menstruation', label: 'Menstruation', short: 'Mens.', color: '#fb7185' },
+  { key: 'follicular', label: 'Folliculaire', short: 'Folli.', color: '#fcd34d' },
+  { key: 'ovulation', label: 'Ovulation', short: 'Ovul.', color: '#34d399' },
+  { key: 'luteal_early', label: 'Lutéale précoce', short: 'Lut. P', color: '#60a5fa' },
+  { key: 'luteal_late', label: 'Lutéale tardive', short: 'Lut. T', color: '#a78bfa' },
+];
+
+function PhaseWheel({ currentPhase }: { currentPhase: CyclePhase }) {
+  const cx = 60, cy = 60, r = 42, w = 14;
+  const segs = PHASES.map((p, i) => {
+    const startA = (i / 5) * 2 * Math.PI - Math.PI / 2;
+    const endA = ((i + 1) / 5) * 2 * Math.PI - Math.PI / 2 - 0.06; // small gap
+    const x1 = cx + r * Math.cos(startA);
+    const y1 = cy + r * Math.sin(startA);
+    const x2 = cx + r * Math.cos(endA);
+    const y2 = cy + r * Math.sin(endA);
+    return { ...p, path: `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`, isActive: p.key === currentPhase };
+  });
+  const current = PHASES.find((p) => p.key === currentPhase);
+  return (
+    <div className="flex flex-col items-center gap-2 py-2">
+      <svg viewBox="0 0 120 120" className="h-32 w-32" aria-hidden>
+        {segs.map((s) => (
+          <path
+            key={s.key}
+            d={s.path}
+            fill="none"
+            stroke={s.color}
+            strokeWidth={s.isActive ? w + 4 : w}
+            strokeOpacity={current ? (s.isActive ? 1 : 0.3) : 0.5}
+            strokeLinecap="butt"
+          />
+        ))}
+        <text x={60} y={56} textAnchor="middle" fontSize="9" fill="#64748b" fontWeight="600">PHASE</text>
+        <text x={60} y={74} textAnchor="middle" fontSize="14" fill="#0f172a" fontWeight="700">{current?.short ?? '?'}</text>
+      </svg>
+      <p className="text-sm text-ink-700 text-center">{current ? <>Phase actuelle : <strong className="text-ink-950">{current.label}</strong></> : 'Phase non déterminée — déclarez votre dernière période.'}</p>
+    </div>
+  );
+}
 
 interface CycleLog {
   id: string;
@@ -50,11 +92,14 @@ export function CycleClient({ userId, initial, enabled, sex }: { userId: string;
       <h1 className="text-3xl font-bold text-fjord-950">{t('title')}</h1>
       <p className="text-sm text-fjord-700">{t('intro')}</p>
 
-      <div className="card flex items-center justify-between">
-        <div>
-          <h2 className="font-semibold text-fjord-900">Suivi {enabled ? 'activé' : 'désactivé'}</h2>
+      <div className="card flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex-1 min-w-[200px]">
+          <h2 className="font-semibold text-ink-900">Suivi {enabled ? 'activé' : 'désactivé'}</h2>
           {enabled && currentPhase !== 'unknown' && (
-            <p className="text-sm text-fjord-700 mt-1">Phase actuelle estimée : <strong>{t(`phase${capitalize(currentPhase.split('_')[0])}`)}</strong></p>
+            <PhaseWheel currentPhase={currentPhase} />
+          )}
+          {enabled && currentPhase === 'unknown' && (
+            <p className="text-sm text-ink-600 mt-2">Déclarez votre dernière période pour estimer la phase courante.</p>
           )}
         </div>
         <button className="btn-secondary" onClick={toggle}>{enabled ? 'Désactiver' : 'Activer'}</button>
