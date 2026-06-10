@@ -6,7 +6,7 @@ Application de coaching course à pied basée sur la méthode norvégienne (Inge
 - **VDOT (Jack Daniels)** pour calibrer toutes les allures
 - **Adaptation continue** : fatigue, douleur, contraintes de temps, cycle menstruel
 - **Plans 4 semaines** régénérés en fonction de votre course objectif
-- **30 jours offerts**, puis 5 € / mois (Stripe)
+- **30 jours offerts**, puis 14,99 € / mois ou 119 € / an (Stripe)
 
 ## Stack
 
@@ -70,7 +70,7 @@ Aucun concurrent grand public (Runna, Campus.coach, TrainingPeaks AI) ne ferme c
    - Remplir `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 
 3. **Stripe**
-   - Créer un produit "Nordic Run" → prix 5 € / mois récurrent
+   - Créer un produit "Nordic Run" → prix récurrent (14,99 € / mois, aligné avec la landing)
    - Remplir `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRICE_ID`
    - Configurer un webhook `/api/stripe/webhook` (events: `customer.subscription.*`, `checkout.session.completed`)
    - Mettre la clé dans `STRIPE_WEBHOOK_SECRET`

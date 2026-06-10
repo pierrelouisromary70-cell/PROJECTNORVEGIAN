@@ -5,6 +5,7 @@ import {
   isRecoveryWeekIndex,
   marathonLongRunKm,
   midLongRunKm,
+  postRaceRecoveryFactor,
   raceFamily,
   safeTargetWeeklyKm,
   shouldDoubleThreshold,
@@ -24,7 +25,9 @@ import {
   buildLt1PM,
   buildMarathonLongRun,
   buildMixed,
+  buildPreRace,
   buildProgressive,
+  buildRaceDay,
   buildRacePace,
   buildRest,
   buildShortReps,
@@ -71,16 +74,38 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
 
     let weekScale = 1.0;
     if (phase === 'taper') weekScale = taperFactor(racePriority);
+    if (args.raceDate) {
+      const weeksSinceRace = Math.floor((weekStart.getTime() - args.raceDate.getTime()) / (7 * 86400000));
+      if (weeksSinceRace >= 0) weekScale = postRaceRecoveryFactor(weeksSinceRace, racePriority);
+    }
     const phaseKm = Math.round(currentKm * weekScale);
 
     const daysToRace = args.raceDate ? Math.max(0, (args.raceDate.getTime() - weekStart.getTime()) / 86400000) : 999;
     const weeksToRace = Math.ceil(daysToRace / 7);
+    const raceDayStr = args.raceDate ? format(args.raceDate, 'yyyy-MM-dd') : undefined;
+    const preRaceDayStr = args.raceDate ? format(addDays(args.raceDate, -1), 'yyyy-MM-dd') : undefined;
 
     const workouts: Workout[] = [];
     for (let d = 0; d < 7; d++) {
       const date = format(addDays(weekStart, d), 'yyyy-MM-dd');
       const base = { date, weeklyKm: phaseKm, daysPerWeek: profile.daysPerWeek, index: d, weekIndex: w, locale, level } as const;
       const mixedWeek = w > 0 && w % 5 === 4 && phase === 'build';
+
+      // The goal race overrides everything on its actual date; the day
+      // before becomes openers; every day after it (in this block) is
+      // recovery — no quality session right after the goal race.
+      if (raceDayStr && raceDistanceMeters && date === raceDayStr) {
+        workouts.push(buildRaceDay(base, raceDistanceMeters));
+        continue;
+      }
+      if (preRaceDayStr && date === preRaceDayStr && racePriority !== 'C' && !restDays.has(d)) {
+        workouts.push(buildPreRace(base));
+        continue;
+      }
+      if (raceDayStr && date > raceDayStr) {
+        workouts.push(restDays.has(d) ? buildRest(base) : buildEasy({ ...base, weeklyKm: Math.round(phaseKm * 0.8) }));
+        continue;
+      }
 
       if (restDays.has(d)) {
         workouts.push(buildRest(base));
@@ -217,6 +242,8 @@ function buildSaturdayLongRun({ base, family, phase, phaseKm, weeksToRace }: Lon
 function computePhase(weekIndex: number, total: number, raceDate?: Date, weekStart?: Date, priority: RacePriority = 'A'): TrainingPhase {
   if (raceDate && weekStart) {
     const daysToRace = (raceDate.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24);
+    // The whole week is after the race → post-race recovery, not taper.
+    if (daysToRace < 0) return 'recovery';
     if (priority === 'C') {
       if (daysToRace <= 28) return 'specific';
       if (daysToRace <= 56) return 'build';

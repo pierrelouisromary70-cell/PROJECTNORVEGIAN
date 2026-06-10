@@ -14,6 +14,7 @@ export default function LandingPage({ params: { locale } }: { params: { locale: 
       <Hero locale={locale} t={t} />
       <Stats t={t} />
       <Method t={t} />
+      <VirtualLactate t={t} />
       <Comparison t={t} />
       <Pricing locale={locale} t={t} />
       <Faq t={t} />
@@ -118,6 +119,33 @@ function MethodCard({ icon, eyebrow, title, body }: { icon: React.ReactNode; eye
       <h3 className="font-display text-2xl mt-6 leading-tight">{title}</h3>
       <p className="mt-3 text-ink-700 leading-relaxed">{body}</p>
     </div>
+  );
+}
+
+function VirtualLactate({ t }: { t: ReturnType<typeof useTranslations<'landing'>> }) {
+  const steps = [
+    { n: '1', title: t('lab1Title'), body: t('lab1Body') },
+    { n: '2', title: t('lab2Title'), body: t('lab2Body') },
+    { n: '3', title: t('lab3Title'), body: t('lab3Body') },
+  ];
+  return (
+    <section className="bg-aurora-50 border-y border-aurora-100">
+      <div className="max-w-6xl mx-auto px-6 py-24">
+        <span className="eyebrow text-aurora-700">{t('labEyebrow')}</span>
+        <h2 className="display text-4xl md:text-5xl mt-3 max-w-3xl">{t('labTitle')}</h2>
+        <p className="mt-6 text-lg text-ink-700 max-w-2xl">{t('labIntro')}</p>
+        <div className="mt-12 grid md:grid-cols-3 gap-5">
+          {steps.map((s) => (
+            <div key={s.n} className="card bg-white">
+              <div className="h-10 w-10 rounded-xl bg-aurora-100 text-aurora-700 grid place-items-center font-display text-xl font-bold">{s.n}</div>
+              <h3 className="font-display text-2xl mt-6 leading-tight">{s.title}</h3>
+              <p className="mt-3 text-ink-700 leading-relaxed">{s.body}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-8 text-sm font-medium text-aurora-800">{t('labNote')}</p>
+      </div>
+    </section>
   );
 }
 

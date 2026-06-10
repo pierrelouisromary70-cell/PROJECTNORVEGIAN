@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { CalendarDays, Compass, Flag, Home, User } from 'lucide-react';
+import { CalendarDays, Flag, Home, LineChart, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function AppShell({ locale, children }: { locale: string; children: React.ReactNode }) {
@@ -12,6 +12,7 @@ export function AppShell({ locale, children }: { locale: string; children: React
     { href: `/${locale}/dashboard`, label: t('today'), icon: Home },
     { href: `/${locale}/plan`, label: t('plan'), icon: CalendarDays },
     { href: `/${locale}/races`, label: 'Courses', icon: Flag },
+    { href: `/${locale}/progress`, label: 'Progrès', icon: LineChart },
     { href: `/${locale}/profile`, label: t('profile'), icon: User },
   ];
   return (
@@ -39,7 +40,7 @@ export function AppShell({ locale, children }: { locale: string; children: React
         })}
       </aside>
       <main className="max-w-3xl mx-auto px-4 md:px-8 py-6">{children}</main>
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-fjord-100 grid grid-cols-4">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-fjord-100 grid grid-cols-5">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = path?.startsWith(tab.href);

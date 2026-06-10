@@ -76,6 +76,18 @@ const FR = {
   recovery: { title: 'Récupération active', purpose: 'Favoriser la circulation.', feel: 'Très facile.', guidance: ['Court (20–40 min)'] },
   rest: { title: 'Repos', purpose: "L'adaptation se fait au repos.", feel: 'Reposé.', guidance: ['Sommeil 8h+', 'Hydratation'] },
   race_pace: { title: 'Allure spécifique', purpose: 'Habituer l\'organisme à l\'allure exacte de votre objectif.', feel: "Comme le jour J, mais plus court.", guidance: ['Chaussures de course recommandées', 'Nutrition de course à tester'] },
+  race_day: {
+    title: 'JOUR DE COURSE',
+    purpose: "C'est le jour J. Tout le bloc a été construit pour aujourd'hui.",
+    feel: "Premier tiers : retenue ('trop facile'). Deuxième tiers : votre allure. Dernier tiers : tout donner.",
+    guidance: ['Échauffement 15-20 min easy + 3-4 strides', 'Ne partez PAS plus vite que votre allure cible — la banque de temps n\'existe pas', 'Nutrition et hydratation testées à l\'entraînement uniquement', 'Après l\'arrivée : 10 min de marche, pas d\'arrêt brutal'],
+  },
+  pre_race: {
+    title: 'Activation pré-course',
+    purpose: 'Réveiller le système neuromusculaire sans créer de fatigue. Demain, vous courez.',
+    feel: 'Très facile, jambes légères. Les strides doivent donner envie d\'en faire plus.',
+    guidance: ['20-30 min très facile maximum', '4 strides de 80-100 m à allure course, récupération complète', 'Préparez votre matériel et votre nutrition ce soir', 'Couchez-vous tôt — le sommeil d\'avant-veille compte plus que celui de la veille'],
+  },
   cross_training: { title: 'Cross-training', purpose: 'Volume aérobie sans impact.', feel: 'Conversationnel.', guidance: ['45–75 min'] },
   double_threshold: { title: 'Journée double seuil', purpose: '', feel: '', guidance: [] },
 } as const;
@@ -130,6 +142,18 @@ const EN = {
     purpose: 'Get your body used to the exact pace of your goal race.',
     feel: 'Like race day, but shorter.',
     guidance: ['Race shoes recommended', 'Test your race fueling'],
+  },
+  race_day: {
+    title: 'RACE DAY',
+    purpose: 'This is the day the whole block was built for.',
+    feel: "First third: hold back ('too easy'). Second third: your pace. Last third: empty the tank.",
+    guidance: ['Warm up 15-20 min easy + 3-4 strides', 'Do NOT start faster than your goal pace — there is no time bank', 'Only use fueling you tested in training', 'After the finish: 10 min walking, no sudden stop'],
+  },
+  pre_race: {
+    title: 'Pre-race activation',
+    purpose: 'Wake up the neuromuscular system without creating fatigue. Tomorrow you race.',
+    feel: 'Very easy, light legs. The strides should leave you wanting more.',
+    guidance: ['20-30 min very easy maximum', '4 strides of 80-100 m at race pace, full recovery', 'Lay out your gear and fueling tonight', 'Sleep early — the night before the night before matters most'],
   },
   cross_training: { title: 'Cross-training', purpose: 'Aerobic volume without impact.', feel: 'Conversational.', guidance: ['45–75 min'] },
   double_threshold: { title: 'Double-threshold day', purpose: '', feel: '', guidance: [] },
@@ -316,6 +340,45 @@ export function buildRacePace({ date, locale }: BuildArgs, raceDistanceMeters: n
     feel: c.feel,
     guidance: [...c.guidance, extraNote, 'Hydratation et nutrition de course'],
     steps: [{ distanceMeters: 2000, pace: 'easy', note: 'WU' }, { reps, distanceMeters: repDist, pace, recoverySeconds: recovery }, { distanceMeters: 2000, pace: 'easy', note: 'CD' }],
+  };
+}
+
+/** The goal race itself, placed on the actual race date inside the block. */
+export function buildRaceDay({ date, locale }: BuildArgs, raceDistanceMeters: number): Workout {
+  const c = copy(locale).race_day;
+  let pace: 'interval' | 'lt2' | 'marathon';
+  if (raceDistanceMeters <= 10000) pace = 'interval';
+  else if (raceDistanceMeters <= 21097.5) pace = 'lt2';
+  else pace = 'marathon';
+  const km = Math.round(raceDistanceMeters / 100) / 10;
+  return {
+    id: nextId(date, '-race'), date, type: 'race_pace',
+    title: `${c.title} — ${km} km`,
+    totalDistanceMeters: raceDistanceMeters + 3000,
+    totalDurationSeconds: Math.round(raceDistanceMeters * 0.36),
+    rpe: 10,
+    purpose: c.purpose, feel: c.feel, guidance: [...c.guidance],
+    steps: [
+      { distanceMeters: 3000, pace: 'easy', note: 'WU + strides' },
+      { distanceMeters: raceDistanceMeters, pace, note: locale === 'en' ? 'RACE' : 'COURSE' },
+    ],
+  };
+}
+
+/** Day-before-race openers: short easy jog + a few strides, zero fatigue. */
+export function buildPreRace({ date, locale }: BuildArgs): Workout {
+  const c = copy(locale).pre_race;
+  return {
+    id: nextId(date, '-prerace'), date, type: 'strides',
+    title: c.title,
+    totalDistanceMeters: 4400,
+    totalDurationSeconds: 30 * 60,
+    rpe: 2,
+    purpose: c.purpose, feel: c.feel, guidance: [...c.guidance],
+    steps: [
+      { distanceMeters: 4000, pace: 'easy' },
+      { reps: 4, distanceMeters: 100, pace: 'repetition', recoverySeconds: 90 },
+    ],
   };
 }
 

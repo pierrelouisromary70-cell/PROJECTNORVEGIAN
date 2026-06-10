@@ -137,6 +137,37 @@ describe('Plan generator with race objective', () => {
     expect(hasSpeedSpecific).toBe(true);
   });
 
+  it('places the race itself on race day, openers the day before, recovery after', () => {
+    const raceDate = new Date('2026-06-21'); // Sunday of week 3
+    const block = generatePlan({
+      profile: intermediate, startDate: new Date('2026-06-01'),
+      raceDistanceMeters: 10000, raceDate, racePriority: 'A', weeks: 4,
+    });
+    const all = block.weeks.flatMap((w) => w.workouts);
+    const raceDay = all.find((w) => w.date === '2026-06-21');
+    expect(raceDay?.title).toContain('10 km');
+    expect(raceDay?.rpe).toBe(10);
+    const dayBefore = all.find((w) => w.date === '2026-06-20');
+    expect(dayBefore?.type).toBe('strides');
+    // No quality session after the race in the same block
+    const after = all.filter((w) => w.date > '2026-06-21');
+    expect(after.length).toBeGreaterThan(0);
+    for (const w of after) {
+      expect(['easy', 'rest']).toContain(w.type);
+    }
+  });
+
+  it('the week after the race carries much less volume than the build weeks', () => {
+    const block = generatePlan({
+      profile: intermediate, startDate: new Date('2026-06-01'),
+      raceDistanceMeters: 10000, raceDate: new Date('2026-06-14'), racePriority: 'A', weeks: 4,
+    });
+    const buildWeek = block.weeks[0];
+    const postRaceWeek = block.weeks[2]; // first full week after the race
+    expect(postRaceWeek.phase).toBe('recovery');
+    expect(postRaceWeek.totalKm).toBeLessThan(buildWeek.totalKm * 0.7);
+  });
+
   it('priority C race does not taper', () => {
     const block = generatePlan({
       profile: intermediate, startDate: new Date('2026-06-01'),
