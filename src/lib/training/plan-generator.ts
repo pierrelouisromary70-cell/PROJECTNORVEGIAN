@@ -152,6 +152,9 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
             workouts.push(wantVo2 ? buildVo2Max(base) : buildSingleThreshold(base));
           } else if (sSessions >= 1 && family === 'middle') {
             workouts.push(buildShortReps(base));
+          } else if (level === 'beginner') {
+            // One quality session per week at this level — Thursday stays easy.
+            workouts.push(buildStrides(base));
           } else {
             workouts.push(buildHills(base));
           }

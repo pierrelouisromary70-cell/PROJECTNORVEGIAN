@@ -97,6 +97,15 @@ describe('Norwegian plan generator', () => {
     }
   });
 
+  it('a beginner gets exactly one hard session per week (threshold), the rest stays easy', () => {
+    const novice: RunnerProfile = { ...baseProfile, experienceYears: 0, currentWeeklyKm: 20, daysPerWeek: 3 };
+    const b = generatePlan({ profile: novice, startDate: new Date('2026-06-01') });
+    for (const week of b.weeks) {
+      const hard = week.workouts.filter((w) => ['lt1_threshold', 'lt2_threshold', 'vo2max', 'hills', 'race_pace'].includes(w.type));
+      expect(hard.length).toBeLessThanOrEqual(1);
+    }
+  });
+
   it('tapers to lower volume in the last 10 days before a race', () => {
     const raceDate = new Date('2026-06-21');
     const start = new Date('2026-06-01');

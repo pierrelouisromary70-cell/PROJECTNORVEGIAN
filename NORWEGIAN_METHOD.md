@@ -90,6 +90,24 @@ Trois leviers principaux gérés dans `training/adaptation.ts` :
 4. **Contrainte de temps** : si l'utilisateur déclare 40 min dispo et la séance demande 65 min → tout l'entraînement est mis à l'échelle.
 5. **Fatigue cumulée** sur 7 jours : si 3 jours+ à fatigue ≥ 4 → bloc complet recalibré à -15 %.
 
+## Le lactate virtuel (calibration des allures)
+
+Le maillon manquant de toutes les transpositions amateur de la méthode norvégienne :
+les pros pilotent l'intensité au lactate sanguin, les amateurs n'ont que des allures
+théoriques issues d'une table. `training/calibration.ts` ferme la boucle :
+
+1. Chaque séance LT1/LT2 porte un **RPE prescrit** (LT1 = 6, LT2 = 7).
+2. Le coureur valide la séance avec son **RPE réel** et un statut (faite / partielle / sautée).
+3. Sur les 6 dernières semaines, la **dérive moyenne** (RPE réel − prescrit) est calculée par zone
+   (minimum 3 retours par zone) ; une séance non terminée compte +1,5 de dérive.
+4. Dérive > +1 → zones **ralenties** de 4 s/km par point de dérive (plafond +12 s/km).
+   Dérive < −1 → zones **accélérées** prudemment (plafond −5 s/km) — les grosses corrections
+   passent par une nouvelle perf VDOT, pas par le ressenti.
+
+L'asymétrie est volontaire : en sous-seuil, **courir trop vite est l'erreur cardinale**
+(on bascule en zone 4-5 mmol/L et on détruit la récupération), courir trop lentement
+coûte très peu. Chaque ajustement est expliqué au coureur sur le dashboard.
+
 ## Ce que la méthode n'est PAS
 
 - **Pas de VO2max permanent.** Le VO2max apparaît en phase Build uniquement.
