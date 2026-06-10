@@ -38,10 +38,18 @@ export function inferExperience(
  * 200 km/sem if you keep adding 8 %. There's a ceiling determined by your
  * level, age, sleep, life — the body needs steady doses, not infinite ramp.
  */
+export function isRecoveryWeekIndex(weekIndex: number): boolean {
+  return weekIndex > 0 && weekIndex % 4 === 3;
+}
+
 export function suggestNextWeeklyKm(currentKm: number, target: number, weekIndex: number): number {
-  const recoveryWeek = weekIndex > 0 && weekIndex % 4 === 3;
-  if (recoveryWeek) {
-    return Math.max(Math.round(currentKm * 0.75), Math.round(target * 0.55));
+  if (isRecoveryWeekIndex(weekIndex)) {
+    // Deload = 75 % of the current week, floored at 55 % of target so the
+    // plateau cycle doesn't decay — but NEVER above the current week: a
+    // runner still ramping toward target must not see the "recovery" week
+    // jump above what they just ran.
+    const deload = Math.max(Math.round(currentKm * 0.75), Math.round(target * 0.55));
+    return Math.min(deload, Math.round(currentKm));
   }
   if (currentKm >= target * 0.95) {
     const fluctuation = (weekIndex % 2 === 0) ? 1.0 : 0.97;
@@ -89,6 +97,36 @@ export function targetWeeklyKmForRace(level: ExperienceLevel, raceDistanceMeters
   const base = targetWeeklyKmForLevel(level);
   if (raceDistanceMeters === undefined) return base;
   return Math.round(base * raceVolumeFactor(raceFamily(raceDistanceMeters)));
+}
+
+/** Hard weekly-volume ceiling per level — beyond this the injury risk outweighs the gains. */
+const LEVEL_WEEKLY_KM_CEILING: Record<ExperienceLevel, number> = {
+  beginner: 60,
+  intermediate: 110,
+  advanced: 150,
+  elite: 190,
+};
+
+/**
+ * Volume target actually fed to the plan generator.
+ *
+ * `targetWeeklyKmForRace` is the theoretical ideal for the race; this clamps
+ * it to what THIS runner can safely absorb:
+ *  - at most 1.6× their current volume (no "15 km/sem → prépa marathon 88 km/sem")
+ *  - never below 80 % of the level base (so the floor stays meaningful)
+ *  - never above the level's hard ceiling
+ */
+export function safeTargetWeeklyKm(
+  level: ExperienceLevel,
+  currentWeeklyKm: number,
+  raceDistanceMeters?: number,
+): number {
+  const raceTarget = targetWeeklyKmForRace(level, raceDistanceMeters);
+  const runnerCap = Math.max(
+    Math.round(currentWeeklyKm * 1.6),
+    Math.round(targetWeeklyKmForLevel(level) * 0.8),
+  );
+  return Math.min(raceTarget, runnerCap, LEVEL_WEEKLY_KM_CEILING[level]);
 }
 
 export function thresholdSessionsPerWeek(level: ExperienceLevel, phase: TrainingPhase, family?: RaceFamily): number {

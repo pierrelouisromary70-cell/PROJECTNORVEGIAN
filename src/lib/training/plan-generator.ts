@@ -2,13 +2,14 @@ import { addDays, format, startOfWeek } from 'date-fns';
 import type { Locale } from '@/i18n/config';
 import {
   inferExperience,
+  isRecoveryWeekIndex,
   marathonLongRunKm,
   midLongRunKm,
   raceFamily,
+  safeTargetWeeklyKm,
   shouldDoubleThreshold,
   speedSessionsPerWeek,
   suggestNextWeeklyKm,
-  targetWeeklyKmForRace,
   taperFactor,
   thresholdSessionsPerWeek,
   type RaceFamily,
@@ -49,16 +50,21 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
   const weeksCount = args.weeks ?? 4;
   const level = inferExperience(profile);
   const family: RaceFamily | undefined = raceDistanceMeters !== undefined ? raceFamily(raceDistanceMeters) : undefined;
-  const target = targetWeeklyKmForRace(level, raceDistanceMeters);
+  const target = safeTargetWeeklyKm(level, profile.currentWeeklyKm, raceDistanceMeters);
   const start = startOfWeek(startDate, { weekStartsOn: 1 });
+  const restDays = restDayIndicesFor(profile.daysPerWeek);
 
   const weeks: TrainingWeek[] = [];
+  // Progression baseline: deload weeks lower the prescribed volume but must
+  // NOT lower the baseline the next build week resumes from.
+  let progressKm = profile.currentWeeklyKm;
   let currentKm = profile.currentWeeklyKm;
 
   for (let w = 0; w < weeksCount; w++) {
     const weekStart = addDays(start, w * 7);
     const phase: TrainingPhase = computePhase(w, weeksCount, args.raceDate, weekStart, racePriority);
-    currentKm = suggestNextWeeklyKm(currentKm, target, w);
+    currentKm = suggestNextWeeklyKm(progressKm, target, w);
+    if (!isRecoveryWeekIndex(w)) progressKm = currentKm;
     const tSessions = thresholdSessionsPerWeek(level, phase, family);
     const sSessions = family ? speedSessionsPerWeek(family, phase) : (phase === 'build' ? 1 : 0);
     const doubles = shouldDoubleThreshold(level) && phase !== 'taper' && phase !== 'recovery' && family !== 'middle';
@@ -76,9 +82,14 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
       const base = { date, weeklyKm: phaseKm, daysPerWeek: profile.daysPerWeek, index: d, weekIndex: w, locale, level } as const;
       const mixedWeek = w > 0 && w % 5 === 4 && phase === 'build';
 
+      if (restDays.has(d)) {
+        workouts.push(buildRest(base));
+        continue;
+      }
+
       switch (d) {
         case 0:
-          workouts.push(profile.daysPerWeek >= 6 ? buildEasy(base) : buildRest(base));
+          workouts.push(buildEasy(base));
           break;
 
         case 1:
@@ -122,7 +133,7 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
           break;
 
         case 4:
-          workouts.push(profile.daysPerWeek >= 7 ? buildEasy(base) : buildRest(base));
+          workouts.push(buildEasy(base));
           break;
 
         case 5:
@@ -153,6 +164,22 @@ export function generatePlan(args: GeneratePlanArgs): TrainingBlock {
     vdotAtStart: profile.vdot,
     targetRaceId: undefined,
   };
+}
+
+/**
+ * Which weekday indices (0 = Monday) are full rest, given how many days the
+ * runner can train. Quality days (Tue d1, Thu d3) and the Saturday long run
+ * (d5) are protected; easy days are dropped first.
+ */
+function restDayIndicesFor(daysPerWeek: number): Set<number> {
+  const d = Math.max(3, Math.min(7, daysPerWeek));
+  switch (d) {
+    case 7: return new Set();
+    case 6: return new Set([4]);
+    case 5: return new Set([0, 4]);
+    case 4: return new Set([0, 2, 4]);
+    default: return new Set([0, 2, 4, 6]); // 3 days: Tue quality, Thu quality, Sat long
+  }
 }
 
 interface LongRunArgs {

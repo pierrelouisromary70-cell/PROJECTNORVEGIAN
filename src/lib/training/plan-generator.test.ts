@@ -55,6 +55,48 @@ describe('Norwegian plan generator', () => {
     }
   });
 
+  it('respects the runner\'s available days per week', () => {
+    for (const days of [3, 4, 5, 6, 7]) {
+      const b = generatePlan({ profile: { ...baseProfile, daysPerWeek: days }, startDate: new Date('2026-06-01') });
+      for (const week of b.weeks) {
+        const runDays = week.workouts.filter((w) => w.type !== 'rest').length;
+        expect(runDays, `daysPerWeek=${days}`).toBeLessThanOrEqual(days);
+      }
+    }
+  });
+
+  it('a 3-day runner keeps quality (Tue), a second session (Thu) and the long run (Sat)', () => {
+    const b = generatePlan({ profile: { ...baseProfile, daysPerWeek: 3 }, startDate: new Date('2026-06-01') });
+    const week = b.weeks[0];
+    expect(week.workouts[1].type).not.toBe('rest');
+    expect(week.workouts[3].type).not.toBe('rest');
+    expect(week.workouts[5].type).not.toBe('rest');
+  });
+
+  it('the deload week (week 4) never exceeds the previous build week', () => {
+    const b = generatePlan({ profile: baseProfile, startDate: new Date('2026-06-01'), weeks: 8 });
+    expect(b.weeks[3].totalKm).toBeLessThan(b.weeks[2].totalKm);
+    // and the following week resumes the build, above the deload
+    expect(b.weeks[4].totalKm).toBeGreaterThan(b.weeks[3].totalKm);
+  });
+
+  it('a low-volume beginner is not over-prescribed (weekly plan ≤ ~1.4× declared volume)', () => {
+    const novice: RunnerProfile = { ...baseProfile, experienceYears: 0, currentWeeklyKm: 20, daysPerWeek: 4 };
+    const b = generatePlan({ profile: novice, startDate: new Date('2026-06-01') });
+    expect(b.weeks[0].totalKm).toBeLessThanOrEqual(Math.round(20 * 1.4));
+  });
+
+  it('a beginner targeting a marathon is capped at a safe volume ceiling', () => {
+    const novice: RunnerProfile = { ...baseProfile, experienceYears: 0, currentWeeklyKm: 25, daysPerWeek: 4 };
+    const b = generatePlan({
+      profile: novice, startDate: new Date('2026-06-01'),
+      raceDate: new Date('2026-10-11'), raceDistanceMeters: 42195, weeks: 4,
+    });
+    for (const week of b.weeks) {
+      expect(week.totalKm).toBeLessThanOrEqual(60);
+    }
+  });
+
   it('tapers to lower volume in the last 10 days before a race', () => {
     const raceDate = new Date('2026-06-21');
     const start = new Date('2026-06-01');

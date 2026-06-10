@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { format } from 'date-fns';
-import { AlertTriangle, HeartHandshake, Coffee } from 'lucide-react';
+import { AlertTriangle, HeartHandshake, Coffee, Gauge } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { generatePlan } from '@/lib/training/plan-generator';
+import { calibrationMessage, computeCalibration, feedbackFromLogs } from '@/lib/training/calibration';
 import { generateComebackPlan } from '@/lib/training/comeback-plan';
 import {
   comebackProtocolDays,
@@ -31,7 +32,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
     supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
     supabase.from('training_blocks').select('*').eq('user_id', user.id).order('start_date', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('target_races').select('*').eq('user_id', user.id).eq('priority', 'A').gte('race_date', new Date().toISOString().slice(0, 10)).order('race_date', { ascending: true }).limit(1).maybeSingle(),
-    supabase.from('workout_logs').select('workout_id,status').eq('user_id', user.id).gte('workout_date', new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10)),
+    supabase.from('workout_logs').select('workout_id,status,actual_rpe').eq('user_id', user.id).gte('workout_date', new Date(Date.now() - 42 * 86400000).toISOString().slice(0, 10)),
   ]);
   const logByWorkoutId = new Map<string, 'done' | 'skipped' | 'partial' | 'replaced'>(
     (logs ?? []).map((l) => [l.workout_id, l.status as 'done' | 'skipped' | 'partial' | 'replaced']),
@@ -252,8 +253,15 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
   }
 
   const today = format(new Date(), 'yyyy-MM-dd');
-  const todayWorkouts: Workout[] = block.weeks.flatMap((w) => w.workouts).filter((w) => w.date === today);
-  const upcoming: Workout[] = block.weeks.flatMap((w) => w.workouts).filter((w) => w.date > today).slice(0, 4);
+  const allBlockWorkouts = block.weeks.flatMap((w) => w.workouts);
+  const todayWorkouts: Workout[] = allBlockWorkouts.filter((w) => w.date === today);
+  const upcoming: Workout[] = allBlockWorkouts.filter((w) => w.date > today).slice(0, 4);
+
+  // "Virtual lactate": recalibrate LT1/LT2 paces from the runner's recent
+  // post-session RPE feedback, and tell them why their paces moved.
+  const calibration = computeCalibration(feedbackFromLogs(logs ?? [], allBlockWorkouts));
+  const calMessage = calibrationMessage(calibration);
+  const zoneOffsets = { lt1: calibration.lt1OffsetSecPerKm, lt2: calibration.lt2OffsetSecPerKm };
 
   return (
     <div className="space-y-6">
@@ -282,6 +290,21 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
 
       <TodayFeedback locale={locale} userId={user.id} todayDate={today} trackCycle={profile.track_cycle} />
 
+      {calMessage && (
+        <div className="card border-aurora-200 ring-aurora-100">
+          <div className="flex items-start gap-3">
+            <Gauge className="h-6 w-6 text-aurora-600 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-semibold text-ink-900">Calibration automatique des allures (lactate virtuel)</p>
+              <p className="text-ink-700 mt-1">{calMessage}</p>
+              <p className="text-ink-500 mt-1 text-xs">
+                Basé sur vos {calibration.lt1Samples + calibration.lt2Samples} derniers retours de séances seuil. Continuez à valider vos séances avec un RPE honnête : c&apos;est votre lactate-mètre.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <RacePredictor vdot={Number(profile.vdot)} />
 
       {todayWorkouts.length === 0 ? (
@@ -293,6 +316,7 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
               key={w.id}
               workout={w}
               vdot={Number(profile.vdot)}
+              zoneOffsets={zoneOffsets}
               withLogControls
               logStatus={logByWorkoutId.get(w.id)}
               runnerLocale={locale}

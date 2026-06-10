@@ -17,11 +17,20 @@ export interface WorkoutCardProps {
   logStatus?: WorkoutLogStatus;
   /** Locale prefix for the in-app workout runner link (e.g. 'fr'). */
   runnerLocale?: string;
+  /** "Virtual lactate" calibration: sec/km to add to the LT1/LT2 ranges (positive = slower). */
+  zoneOffsets?: { lt1: number; lt2: number };
 }
 
-export function WorkoutCard({ workout, vdot, compact = false, withLogControls = false, logStatus, runnerLocale }: WorkoutCardProps) {
+export function WorkoutCard({ workout, vdot, compact = false, withLogControls = false, logStatus, runnerLocale, zoneOffsets }: WorkoutCardProps) {
   const t = useTranslations('workout');
-  const zones = buildPaceZones(vdot);
+  const base = buildPaceZones(vdot);
+  const zones: PaceZones = zoneOffsets
+    ? {
+        ...base,
+        lt1: { minSecPerKm: base.lt1.minSecPerKm + zoneOffsets.lt1, maxSecPerKm: base.lt1.maxSecPerKm + zoneOffsets.lt1 },
+        lt2: { minSecPerKm: base.lt2.minSecPerKm + zoneOffsets.lt2, maxSecPerKm: base.lt2.maxSecPerKm + zoneOffsets.lt2 },
+      }
+    : base;
 
   if (compact) {
     return (

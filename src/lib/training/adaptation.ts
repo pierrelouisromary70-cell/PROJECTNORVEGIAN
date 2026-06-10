@@ -2,7 +2,7 @@ import type { TrainingBlock, Workout } from './types';
 
 export type FatigueLevel = 1 | 2 | 3 | 4 | 5;
 export type PainLevel = 0 | 1 | 2 | 3;
-export type CyclePhase = 'menstruation' | 'follicular' | 'ovulation' | 'luteal_late' | 'unknown';
+export type CyclePhase = 'menstruation' | 'follicular' | 'ovulation' | 'luteal' | 'luteal_late' | 'unknown';
 
 export interface AdaptationInput {
   fatigue: FatigueLevel;
@@ -140,16 +140,6 @@ function reduceRepsAndDropZone(w: Workout, factor: number, note: string): Workou
   };
 }
 
-function downgradeToEasy(w: Workout, note: string): Workout {
-  const km = Math.max(6, Math.round(w.totalDistanceMeters / 1000 * 0.7));
-  return {
-    ...w, type: 'easy', title: 'Footing facile (adapté)',
-    totalDistanceMeters: km * 1000, totalDurationSeconds: km * 360, rpe: 3,
-    steps: [{ distanceMeters: km * 1000, pace: 'easy' }],
-    guidance: [note, ...w.guidance],
-  };
-}
-
 function reduceIntensity(w: Workout, note: string): Workout {
   return {
     ...w,
@@ -201,6 +191,8 @@ export function inferCyclePhase(lastPeriodStart: Date, today: Date, cycleLength 
   if (days < 5) return 'menstruation';
   if (days < 12) return 'follicular';
   if (days < 16) return 'ovulation';
-  if (days < cycleLength - 3) return 'luteal_late';
+  // Mid-luteal is a normal training window — only the last ~5 days
+  // (premenstrual) warrant easing intensity when fatigue is reported.
+  if (days < cycleLength - 5) return 'luteal';
   return 'luteal_late';
 }

@@ -81,16 +81,56 @@ const FR = {
 } as const;
 
 const EN = {
-  easy: { title: 'Easy run', purpose: 'Aerobic volume.', feel: 'You can hold a conversation.', guidance: ['HR < 75% HRmax'] },
-  long: { title: 'Long run', purpose: 'Aerobic base.', feel: 'Comfortable throughout.', guidance: ['Practice race-day fueling'] },
-  lt1_threshold: { title: 'Sub-threshold (LT1)', purpose: 'Improve lactate clearance.', feel: 'Sustained but controlled.', guidance: ['Never exceed the prescribed pace'] },
-  lt2_threshold: { title: 'Threshold (LT2)', purpose: 'Push the upper lactate threshold.', feel: 'Controlled discomfort.', guidance: ['Full 20-min warm-up required'] },
-  vo2max: { title: 'VO2max', purpose: 'Improve maximal oxygen uptake.', feel: 'Hard.', guidance: ['Even-paced'] },
-  hills: { title: 'Hills', purpose: 'Strength.', feel: 'Strong but short.', guidance: ['Upright posture'] },
-  strides: { title: 'Strides', purpose: 'Technique work.', feel: 'Snappy, smooth.', guidance: ['At end of an easy run'] },
-  recovery: { title: 'Recovery jog', purpose: 'Circulation.', feel: 'Very easy.', guidance: ['Short'] },
-  rest: { title: 'Rest', purpose: 'Adaptation happens at rest.', feel: 'Rested.', guidance: ['8h+ sleep'] },
-  race_pace: { title: 'Race-pace work', purpose: 'Get your body used to your goal pace.', feel: 'Like race day.', guidance: ['Race shoes recommended'] },
+  easy: {
+    title: 'Easy run',
+    purpose: 'Aerobic volume. Most of your mileage must stay easy so you can absorb the quality sessions.',
+    feel: 'You can hold a full conversation. If you are out of breath, slow down.',
+    guidance: ['Nasal breathing possible most of the time', 'HR < 75% HRmax', "If in doubt, you're going too fast"],
+  },
+  long: {
+    title: 'Long run',
+    purpose: 'Aerobic base, running economy, muscular and tendon robustness.',
+    feel: 'Comfortable start to finish. The last 20% can sting, but never force.',
+    guidance: ['Practice race-day fueling and hydration', 'Steady cadence, no intensity spikes', 'Rolling terrain welcome'],
+  },
+  lt1_threshold: {
+    title: 'Sub-threshold (LT1)',
+    purpose: 'Improve lactate clearance at moderate intensity — the cornerstone of the Norwegian method: accumulate threshold time without digging a hole.',
+    feel: 'Sustained but controlled effort.',
+    guidance: ['Never exceed the prescribed pace', 'Short recoveries at a light jog'],
+  },
+  lt2_threshold: {
+    title: 'Threshold (LT2)',
+    purpose: 'Push the upper lactate threshold.',
+    feel: 'Controlled discomfort. 7/10 effort.',
+    guidance: ['Full 20-min warm-up required', 'Lactate ≈ 3.5–4.0 mmol/L'],
+  },
+  vo2max: {
+    title: 'VO2max',
+    purpose: 'Improve maximal oxygen uptake and aerobic power.',
+    feel: 'Hard. 8.5/10.',
+    guidance: ["Even-paced: don't start too fast", 'Active jog recoveries'],
+  },
+  hills: {
+    title: 'Hills',
+    purpose: 'Strength, running economy, neuromuscular power.',
+    feel: 'Strong but short.',
+    guidance: ['Upright posture, quick cadence'],
+  },
+  strides: {
+    title: 'Strides',
+    purpose: 'Technique and neuromuscular work, without fatigue.',
+    feel: 'Snappy, smooth, controlled.',
+    guidance: ['At the end of an easy run', 'Full recovery between reps', '4 to 8 repetitions'],
+  },
+  recovery: { title: 'Recovery jog', purpose: 'Promote circulation.', feel: 'Very easy.', guidance: ['Short (20–40 min)'] },
+  rest: { title: 'Rest', purpose: 'Adaptation happens at rest.', feel: 'Rested.', guidance: ['8h+ sleep', 'Hydration'] },
+  race_pace: {
+    title: 'Race-pace work',
+    purpose: 'Get your body used to the exact pace of your goal race.',
+    feel: 'Like race day, but shorter.',
+    guidance: ['Race shoes recommended', 'Test your race fueling'],
+  },
   cross_training: { title: 'Cross-training', purpose: 'Aerobic volume without impact.', feel: 'Conversational.', guidance: ['45–75 min'] },
   double_threshold: { title: 'Double-threshold day', purpose: '', feel: '', guidance: [] },
 } as const;
@@ -126,7 +166,7 @@ export function buildEasy({ date, weeklyKm, daysPerWeek, locale, index }: BuildA
 }
 
 export function buildLong({ date, weeklyKm, locale }: BuildArgs): Workout {
-  const km = Math.max(10, Math.round(weeklyKm * 0.28));
+  const km = Math.max(6, Math.round(weeklyKm * 0.28));
   const c = copy(locale).long;
   return { id: nextId(date), date, type: 'long', title: c.title, totalDistanceMeters: km * 1000, totalDurationSeconds: km * 320, rpe: 4, purpose: c.purpose, feel: c.feel, guidance: [...c.guidance], steps: [{ distanceMeters: km * 1000, pace: 'long' }] };
 }
@@ -372,6 +412,6 @@ export function buildRest({ date, locale }: BuildArgs): Workout {
 
 export function buildStrides({ date, weeklyKm, locale }: BuildArgs): Workout {
   const c = copy(locale).strides;
-  const km = Math.max(6, Math.round((weeklyKm * 0.12)));
+  const km = Math.max(4, Math.round((weeklyKm * 0.12)));
   return { id: nextId(date), date, type: 'strides', title: `Easy + ${c.title.toLowerCase()}`, totalDistanceMeters: km * 1000 + 800, totalDurationSeconds: km * 330 + 300, rpe: 4, purpose: c.purpose, feel: c.feel, guidance: [...c.guidance], steps: [{ distanceMeters: km * 1000, pace: 'easy' }, { reps: 6, distanceMeters: 100, pace: 'repetition', recoverySeconds: 60 }] };
 }

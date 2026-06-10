@@ -28,17 +28,33 @@ Le cœur de l'app est dans `src/lib/`:
 | `vdot/paces.ts` | Construit les zones norvégiennes (LT1 / LT2 distincts) |
 | `training/norwegian.ts` | Règles du modèle : volume cible, nombre de seuils, double-seuil |
 | `training/workouts.ts` | Catalogue de séances avec **but**, **ressenti**, **RPE**, **conseils** |
-| `training/plan-generator.ts` | Génère un bloc de 3-4 semaines (base / build / spécifique / affûtage) |
+| `training/plan-generator.ts` | Génère un bloc de 3-4 semaines (base / build / spécifique / affûtage), en respectant les jours disponibles |
 | `training/adaptation.ts` | Réajuste sur fatigue, douleur, phase du cycle, contraintes de temps |
+| `training/calibration.ts` | **Lactate virtuel** : recalibre les allures LT1/LT2 à partir des RPE post-séance |
 
 ## Modèle norvégien implémenté
 
-- **Débutant (~30 km/sem)** : 1 seance seuil/sem, progression de volume de 8%/sem avec semaine de décharge tous les 4 cycles
+- **Débutant (~30 km/sem)** : 1 séance seuil/sem, progression de volume de 8%/sem avec semaine de décharge tous les 4 cycles
 - **Intermédiaire (~50-80)** : 2 séances de seuil hebdo (mardi + jeudi)
 - **Avancé (~80-120)** : 3 séances dont 1 double-seuil (mardi AM 6×1000m + PM 10×400m)
 - **Élite (110+)** : 4 séances de seuil dont **2 doubles** (mardi & jeudi)
 
 Les allures LT1 / LT2 sont décalibrées de la T classique de Daniels pour rester "sub-threshold" (lactate ~2.0–2.5 mmol/L sur AM).
+
+## Axe différenciant : le « lactate virtuel »
+
+La méthode norvégienne repose sur le **contrôle du lactate** — inaccessible à 99,9 % des coureurs.
+Nordic Run remplace le lactate-mètre par les données déjà collectées :
+
+1. Chaque séance seuil porte un **RPE prescrit** (LT1 = 6, LT2 = 7).
+2. Le coureur valide chaque séance avec son **RPE réel** et un statut (faite / partielle / sautée).
+3. `training/calibration.ts` mesure la **dérive moyenne** sur les 6 dernières semaines :
+   - dérive > +1 RPE (ou séances non terminées) → les zones LT1/LT2 sont **ralenties** (jusqu'à +12 s/km)
+   - dérive < −1 RPE → les zones sont **accélérées** prudemment (max −5 s/km — les grosses corrections passent par une nouvelle perf VDOT)
+4. Le dashboard **explique** chaque ajustement au coureur (transparence = confiance = rétention).
+
+C'est asymétrique à dessein : en sous-seuil, courir trop vite est l'erreur cardinale, courir trop lentement coûte peu.
+Aucun concurrent grand public (Runna, Campus.coach, TrainingPeaks AI) ne ferme cette boucle ressenti → allures.
 
 ## Setup local
 
@@ -63,7 +79,7 @@ Les allures LT1 / LT2 sont décalibrées de la T classique de Daniels pour reste
    ```bash
    npm run dev
    ```
-   Ôuvre [http://localhost:3000/fr](http://localhost:3000/fr).
+   Ouvre [http://localhost:3000/fr](http://localhost:3000/fr).
 
 ## Parcours utilisateur
 
@@ -76,9 +92,10 @@ Les allures LT1 / LT2 sont décalibrées de la T classique de Daniels pour reste
 ## Ce qu'il reste à brancher (V2)
 
 - Adaptation persistante du plan côté serveur (cron quotidien qui appelle `applyBlockAdaptation`)
-- Synchronisation montres GPS (Garmin Connect / Strava webhook)
-- Notifications push pour le ressenti du soir
-- Tests automatisés (Vitest pour la logique VDOT/plan/adaptation)
+- Synchronisation montres GPS (Garmin Connect / Strava webhook) — alimentera aussi le lactate virtuel (dérive cardiaque)
+- Notifications push pour le ressenti du soir et la validation de séance (sans validation, pas de calibration)
+- Mise à jour automatique du VDOT après une course validée
+- Page « progrès » : évolution du volume, du VDOT et de la calibration dans le temps
 
 ## Vie privée
 
