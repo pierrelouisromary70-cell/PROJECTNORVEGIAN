@@ -89,13 +89,25 @@ Aucun concurrent grand public (Runna, Campus.coach, TrainingPeaks AI) ne ferme c
 4. Chaque jour : ressenti (fatigue 1–5, douleur 0–3, temps dispo) → la séance du jour s'adapte.
 5. Ajout d'une course objectif → le prochain bloc bascule en phase **spécifique / taper**.
 
+## Notifications push (rappel du soir)
+
+Infrastructure complète et prête : service worker, souscriptions web-push (table RLS),
+opt-in côté coureur avec réglage de l'heure et test, et cron horaire qui envoie le rappel
+à l'heure **locale** de chacun. C'est la boucle qui alimente l'adaptation ET le lactate
+virtuel — sans validation de séance, pas de calibration. Mise en service en 3 étapes
+(clés VAPID + migration `0007` + cron) : voir **[PUSH_SETUP.md](./PUSH_SETUP.md)**.
+
 ## Ce qu'il reste à brancher (V2)
 
 - Adaptation persistante du plan côté serveur (cron quotidien qui appelle `applyBlockAdaptation`)
 - Synchronisation montres GPS (Garmin Connect / Strava webhook) — alimentera aussi le lactate virtuel (dérive cardiaque)
-- Notifications push pour le ressenti du soir et la validation de séance (sans validation, pas de calibration)
-- Mise à jour automatique du VDOT après une course validée
-- Page « progrès » : évolution du volume, du VDOT et de la calibration dans le temps
+- Affiner le ciblage du cron (filtrer par fuseau au niveau SQL quand la base grandit)
+
+### Déjà livré
+
+- ✅ Notifications push pour le ressenti du soir et la validation de séance
+- ✅ Mise à jour automatique du VDOT après une course validée (page Courses → « Renseigner mon temps »)
+- ✅ Page « Progrès » : volume planifié vs réalisé, assiduité qualité, calibration des allures
 
 ## Vie privée
 

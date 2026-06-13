@@ -14,6 +14,7 @@ import {
 import type { RunnerProfile, TrainingBlock, Workout } from '@/lib/training/types';
 import { WorkoutCard } from '@/components/WorkoutCard';
 import { RacePredictor } from '@/components/RacePredictor';
+import { NotificationOptIn } from '@/components/NotificationOptIn';
 import { TodayFeedback } from './TodayFeedback';
 import { TrialBanner } from './TrialBanner';
 import { ComebackStartButton, ResumeNormalButton } from './InjuryStateControls';
@@ -289,6 +290,15 @@ export default async function DashboardPage({ params: { locale } }: { params: { 
       </header>
 
       <TodayFeedback locale={locale} userId={user.id} todayDate={today} trackCycle={profile.track_cycle} />
+
+      {process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && (
+        <NotificationOptIn
+          userId={user.id}
+          vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+          initialEnabled={profile.notify_evening_feedback ?? true}
+          initialHour={profile.notify_hour ?? 20}
+        />
+      )}
 
       {calMessage && (
         <div className="card border-aurora-200 ring-aurora-100">
